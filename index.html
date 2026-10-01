@@ -13,22 +13,57 @@
 
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- SUBSCRIPTION EXPIRED / LOCK SCREEN -->
-    <div id="lock-screen" class="hidden fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6">
-        <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl text-center space-y-6">
-            <div class="w-16 h-16 bg-rose-600/20 text-rose-400 rounded-2xl mx-auto flex items-center justify-center text-2xl">
-                <i class="fa-solid fa-lock"></i>
+    <!-- STRICT PAYWALL / SUBSCRIPTION LOCK SCREEN (DEFAULT STATE) -->
+    <div id="paywall-screen" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6 overflow-y-auto">
+        <div class="max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl text-center space-y-8">
+            <div class="space-y-3">
+                <div class="w-16 h-16 bg-indigo-600/20 text-indigo-400 rounded-2xl mx-auto flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-cube"></i>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Ultimate Business CRM Suite</h1>
+                <p class="text-slate-400 max-w-lg mx-auto text-sm sm:text-base">Scale your client pipeline, automate AI outreach, and close deals faster. Select your subscription tier to unlock your workspace instantly.</p>
             </div>
-            <div>
-                <h1 class="text-2xl font-bold text-white">Subscription Expired</h1>
-                <p class="text-sm text-slate-400 mt-2">Your subscription has ended. Renew via Selar to instantly unlock your dashboard again.</p>
+
+            <!-- Pricing Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
+                <!-- 1 Month -->
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6">
+                    <div>
+                        <span class="text-xs uppercase font-semibold text-indigo-400 tracking-wider">Starter</span>
+                        <h3 class="text-2xl font-bold text-white mt-1">1 Month</h3>
+                        <p class="text-slate-400 text-xs mt-1">Full access for short-term campaigns.</p>
+                    </div>
+                    <a href="https://selar.co" target="_blank" class="block w-full bg-indigo-600 hover:bg-indigo-500 text-white text-center font-semibold py-3 rounded-xl transition text-sm">Get 1 Month Access</a>
+                </div>
+
+                <!-- 6 Months -->
+                <div class="bg-slate-950 border-2 border-indigo-500/80 rounded-2xl p-6 flex flex-col justify-between space-y-6 relative shadow-xl shadow-indigo-500/10">
+                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">Most Popular</span>
+                    <div>
+                        <span class="text-xs uppercase font-semibold text-indigo-400 tracking-wider">Growth</span>
+                        <h3 class="text-2xl font-bold text-white mt-1">6 Months</h3>
+                        <p class="text-slate-400 text-xs mt-1">Best value for expanding agencies.</p>
+                    </div>
+                    <a href="https://selar.co" target="_blank" class="block w-full bg-indigo-600 hover:bg-indigo-500 text-white text-center font-semibold py-3 rounded-xl transition text-sm">Get 6 Months Access</a>
+                </div>
+
+                <!-- 1 Year -->
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6">
+                    <div>
+                        <span class="text-xs uppercase font-semibold text-purple-400 tracking-wider">Enterprise</span>
+                        <h3 class="text-2xl font-bold text-white mt-1">1 Year</h3>
+                        <p class="text-slate-400 text-xs mt-1">Maximum savings for long-term growth.</p>
+                    </div>
+                    <a href="https://selar.co" target="_blank" class="block w-full bg-purple-600 hover:bg-purple-500 text-white text-center font-semibold py-3 rounded-xl transition text-sm">Get 1 Year Access</a>
+                </div>
             </div>
-            <a href="https://selar.co" target="_blank" class="block w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition duration-200">Renew Subscription on Selar</a>
+
+            <p class="text-xs text-slate-500">Already purchased? Use your Selar redirect link or enter your test override below if testing.</p>
         </div>
     </div>
 
-    <!-- MAIN APP DASHBOARD -->
-    <div id="app-screen" class="h-full flex flex-col justify-between">
+    <!-- MAIN APP DASHBOARD (Hidden until paid/unlocked) -->
+    <div id="app-screen" class="hidden h-full flex flex-col justify-between">
         <header class="flex justify-between items-center py-4 px-6 sm:px-10 border-b border-slate-900 bg-slate-950 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold">
@@ -36,12 +71,12 @@
                 </div>
                 <div>
                     <span class="font-bold text-lg tracking-tight">SaaS CRM Suite</span>
-                    <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-medium">Enterprise Edition</span>
+                    <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-medium">Ultimate Business Edition</span>
                 </div>
             </div>
             <div class="flex items-center gap-3">
                 <span id="expiry-badge" class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">Active Subscription</span>
-                <button onclick="simulateReset()" class="text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">Lock Preview</button>
+                <button onclick="lockSession()" class="text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">Lock Session</button>
             </div>
         </header>
 
@@ -163,11 +198,10 @@
     </div>
 
     <script>
-        // Durations in milliseconds
         const PLANS = {
-            "1m": 30 * 24 * 60 * 60 * 1000,    // 1 Month (30 Days)
-            "6m": 180 * 24 * 60 * 60 * 1000,  // 6 Months (180 Days)
-            "1y": 365 * 24 * 60 * 60 * 1000   // 1 Year (365 Days)
+            "1m": 30 * 24 * 60 * 60 * 1000,    // 30 Days
+            "6m": 180 * 24 * 60 * 60 * 1000,  // 180 Days
+            "1y": 365 * 24 * 60 * 60 * 1000   // 365 Days
         };
 
         function showToast(msg, type='success') {
@@ -193,27 +227,21 @@
 
             const expiry = localStorage.getItem('crm_expiry');
             
-            // If no expiry exists, give a default 30-day trial for testing, or lock if expired
-            if (!expiry) {
-                // Default test grant so it doesn't lock your testing view right away
-                localStorage.setItem('crm_expiry', Date.now() + PLANS['1m']);
-            }
-
-            const currentExpiry = parseInt(localStorage.getItem('crm_expiry'));
-            
-            if (Date.now() < currentExpiry) {
+            // Default locked state if no active expiry or time passed
+            if (expiry && Date.now() < parseInt(expiry)) {
                 document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('lock-screen').classList.add('hidden');
+                document.getElementById('paywall-screen').classList.add('hidden');
                 loadLeads();
             } else {
                 document.getElementById('app-screen').classList.add('hidden');
-                document.getElementById('lock-screen').classList.remove('hidden');
+                document.getElementById('paywall-screen').classList.remove('hidden');
             }
         }
 
-        function simulateReset() {
+        function lockSession() {
             localStorage.removeItem('crm_expiry');
             checkSubscription();
+            showToast('Session locked.');
         }
 
         document.getElementById('lead-form').addEventListener('submit', (e) => {
@@ -273,37 +301,4 @@
         }
 
         function deleteLead(id) {
-            let leads = JSON.parse(localStorage.getItem('crm_leads') || '[]');
-            leads = leads.filter(l => l.id !== id);
-            localStorage.setItem('crm_leads', JSON.stringify(leads));
-            loadLeads();
-            showToast('Lead deleted.');
-        }
-
-        function generateAIPitch(type) {
-            const out = document.getElementById('ai-output');
-            if(type==='audit') out.value = "Hello! We analyzed your online presence and found missed client requests. Our optimized workflow fixes this instantly—let's schedule a brief chat!";
-            if(type==='followup') out.value = "Hi there! Just circling back regarding your project booking. Let me know if you are ready to move forward today.";
-            showToast('AI template generated!');
-        }
-
-        function copyAIPitch() {
-            navigator.clipboard.writeText(document.getElementById('ai-output').value);
-            showToast('Copied to clipboard!');
-        }
-
-        function exportCSV() {
-            const leads = JSON.parse(localStorage.getItem('crm_leads') || '[]');
-            let csv = 'Name,Phone,Status,Value,Date,Notes\n';
-            leads.forEach(l => { csv += `"${l.name}","${l.phone}","${l.status}",${l.value},"${l.date}","${l.notes}"\n`; });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'crm-pipeline-backup.csv'; a.click();
-            showToast('CSV Exported!');
-        }
-
-        window.onload = checkSubscription;
-    </script>
-</body>
-                    </html>
+            let leads = JSON.parse(localStorage.getItem('crm_leads')
