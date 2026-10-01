@@ -1,303 +1,215 @@
+import os, sqlite3, secrets, hashlib, hmac
+from datetime import datetime, timezone, timedelta
+from functools import wraps
+import requests
+from flask import Flask, request, jsonify, render_template, session
 
-        
-            <!DOCTYPE html>
-<html lang="en" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaS CRM Suite - Ultimate Business Edition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="h-full bg-slate-950 text-slate-100 font-sans antialiased flex flex-col justify-between">
+app=Flask(__name__)
+app.secret_key=os.getenv('SESSION_SECRET','CHANGE_THIS_SESSION_SECRET')
+DB=os.getenv('DATABASE_PATH','saas.sqlite3')
+MASTER_PASSWORD=os.getenv('MASTER_PASSWORD','CHANGE_THIS_ADMIN_PASSWORD')
+SELAR_PRODUCT_URL=os.getenv('SELAR_PRODUCT_URL','https://selar.com/9u69r59d57')
+GEMINI_API_KEY=os.getenv('GEMINI_API_KEY','')
+GEMINI_MODEL=os.getenv('GEMINI_MODEL','gemini-2.5-flash')
+SELAR_WEBHOOK_SECRET=os.getenv('SELAR_WEBHOOK_SECRET','')
+PLANS={'monthly':{'name':'1 Month','price':19,'days':31},'six_months':{'name':'6 Months','price':79,'days':183},'yearly':{'name':'1 Year','price':149,'days':365}}
 
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+def now(): return datetime.now(timezone.utc).isoformat()
+def db():
+    c=sqlite3.connect(DB); c.row_factory=sqlite3.Row; return c
 
-    <!-- STRICT PAYWALL / SUBSCRIPTION LOCK SCREEN (DEFAULT STATE) -->
-    <div id="paywall-screen" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6 overflow-y-auto">
-        <div class="max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl text-center space-y-8">
-            <div class="space-y-3">
-                <div class="w-16 h-16 bg-indigo-600/20 text-indigo-400 rounded-2xl mx-auto flex items-center justify-center text-2xl">
-                    <i class="fa-solid fa-cube"></i>
-                </div>
-                <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Ultimate Business CRM Suite</h1>
-                <p class="text-slate-400 max-w-lg mx-auto text-sm sm:text-base">Scale your client pipeline, automate AI outreach, and close deals faster. Select your subscription tier to unlock your workspace instantly.</p>
-            </div>
+def init_db():
+    c=db(); c.executescript('''
+    CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,business TEXT NOT NULL,email TEXT NOT NULL UNIQUE,password TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS subscriptions(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,plan TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',access_code TEXT UNIQUE,starts_at TEXT,expires_at TEXT,payment_ref TEXT,created_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id));
+    CREATE TABLE IF NOT EXISTS leads(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,name TEXT NOT NULL,phone TEXT,email TEXT,service TEXT,source TEXT,message TEXT,stage TEXT NOT NULL DEFAULT 'NEW',score INTEGER NOT NULL DEFAULT 0,notes TEXT,created_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id));
+    CREATE TABLE IF NOT EXISTS activities(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,lead_id INTEGER,kind TEXT NOT NULL,title TEXT NOT NULL,details TEXT,due_at TEXT,completed INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS appointments(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,lead_id INTEGER,title TEXT NOT NULL,appointment_at TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'SCHEDULED',notes TEXT,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS webhook_events(id INTEGER PRIMARY KEY AUTOINCREMENT,event_key TEXT UNIQUE,payload TEXT NOT NULL,received_at TEXT NOT NULL);
+    '''); c.commit(); c.close()
 
-            <!-- Pricing Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
-                <!-- 1 Month -->
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6">
-                    <div>
-                        <span class="text-xs uppercase font-semibold text-indigo-400 tracking-wider">Starter</span>
-                        <h3 class="text-2xl font-bold text-white mt-1">1 Month</h3>
-                        <p class="text-slate-400 text-xs mt-1">Full access for short-term campaigns.</p>
-                    </div>
-                   <a href="https://selar.com/9u69r59d57" target="_blank" class="block w-full bg-indigo-600... 
+def hp(x):
+    salt=secrets.token_bytes(16); d=hashlib.pbkdf2_hmac('sha256',x.encode(),salt,210000)
+    return salt.hex()+':'+d.hex()
+def cp(x,s):
+    try:
+        a,b=s.split(':',1); d=hashlib.pbkdf2_hmac('sha256',x.encode(),bytes.fromhex(a),210000).hex(); return hmac.compare_digest(d,b)
+    except: return False
 
-                <!-- 6 Months -->
-                <div class="bg-slate-950 border-2 border-indigo-500/80 rounded-2xl p-6 flex flex-col justify-between space-y-6 relative shadow-xl shadow-indigo-500/10">
-                    <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">Most Popular</span>
-                    <div>
-                        <span class="text-xs uppercase font-semibold text-indigo-400 tracking-wider">Growth</span>
-                        <h3 class="text-2xl font-bold text-white mt-1">6 Months</h3>
-                        <p class="text-slate-400 text-xs mt-1">Best value for expanding agencies.</p>
-                    </div>
-                    <a href="https://selar.com/9u69r59d57" target="_blank" class="block w-full bg-indigo-600...
-                </div>
+def current_user():
+    uid=session.get('user_id')
+    if not uid:return None
+    c=db(); r=c.execute('SELECT id,name,business,email,created_at FROM users WHERE id=?',(uid,)).fetchone(); c.close(); return r
 
-                <!-- 1 Year -->
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between space-y-6">
-                    <div>
-                        <span class="text-xs uppercase font-semibold text-purple-400 tracking-wider">Enterprise</span>
-                        <h3 class="text-2xl font-bold text-white mt-1">1 Year</h3>
-                        <p class="text-slate-400 text-xs mt-1">Maximum savings for long-term growth.</p>
-                    </div>
-                    <a href="https://selar.com/9u69r59d57" target="_blank" class="block w-full bg-purple-600...
-                </div>
-            </div>
+def active_sub(uid):
+    c=db(); r=c.execute("SELECT * FROM subscriptions WHERE user_id=? AND status='active' ORDER BY id DESC LIMIT 1",(uid,)).fetchone()
+    if r and r['expires_at']:
+        try:
+            if datetime.fromisoformat(r['expires_at'])<=datetime.now(timezone.utc):
+                c.execute("UPDATE subscriptions SET status='expired' WHERE id=?",(r['id'],)); c.commit(); r=None
+        except: pass
+    c.close(); return r
 
-            <p class="text-xs text-slate-500">Already purchased? Use your Selar redirect link or enter your test override below if testing.</p>
-        </div>
-    </div>
+def code():
+    while True:
+        x='AGC-'+secrets.token_hex(3).upper()+'-'+secrets.token_hex(3).upper(); c=db(); q=c.execute('SELECT 1 FROM subscriptions WHERE access_code=?',(x,)).fetchone(); c.close()
+        if not q:return x
 
-    <!-- MAIN APP DASHBOARD (Hidden until paid/unlocked) -->
-    <div id="app-screen" class="hidden h-full flex flex-col justify-between">
-        <header class="flex justify-between items-center py-4 px-6 sm:px-10 border-b border-slate-900 bg-slate-950 shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold">
-                    <i class="fa-solid fa-cube"></i>
-                </div>
-                <div>
-                    <span class="font-bold text-lg tracking-tight">SaaS CRM Suite</span>
-                    <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-medium">Ultimate Business Edition</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <span id="expiry-badge" class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">Active Subscription</span>
-                <button onclick="lockSession()" class="text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">Lock Session</button>
-            </div>
-        </header>
+def login_required(f):
+    @wraps(f)
+    def w(*a,**k):
+        if not current_user():return jsonify(ok=False,error='Login required'),401
+        return f(*a,**k)
+    return w
 
-        <main class="flex-1 p-6 sm:p-10 max-w-7xl mx-auto w-full space-y-8 overflow-y-auto">
-            <!-- Stats -->
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
-                    <p class="text-xs text-slate-400 uppercase font-medium">Total Leads</p>
-                    <h3 id="stat-total" class="text-2xl font-bold text-white mt-1">0</h3>
-                </div>
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
-                    <p class="text-xs text-slate-400 uppercase font-medium">Booked Appointments</p>
-                    <h3 id="stat-booked" class="text-2xl font-bold text-emerald-400 mt-1">0</h3>
-                </div>
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
-                    <p class="text-xs text-slate-400 uppercase font-medium">Closed Deals Value</p>
-                    <h3 id="stat-revenue" class="text-2xl font-bold text-purple-400 mt-1">$0</h3>
-                </div>
-                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
-                    <p class="text-xs text-slate-400 uppercase font-medium">Conversion Rate</p>
-                    <h3 id="stat-conv" class="text-2xl font-bold text-indigo-400 mt-1">0%</h3>
-                </div>
-            </div>
+def paid_required(f):
+    @wraps(f)
+    def w(*a,**k):
+        u=current_user()
+        if not u:return jsonify(ok=False,error='Login required'),401
+        if not active_sub(u['id']):return jsonify(ok=False,error='Active subscription required',locked=True),403
+        return f(*a,**k)
+    return w
 
-            <!-- Forms & AI -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Add Lead -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-user-plus text-indigo-400"></i> Add Prospect / Client
-                    </h2>
-                    <form id="lead-form" class="space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Client Name</label>
-                                <input type="text" id="lead-name" required placeholder="e.g. Apex Dental" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">WhatsApp / Phone</label>
-                                <input type="text" id="lead-phone" required placeholder="+234..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Status</label>
-                                <select id="lead-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
-                                    <option value="New Lead">New Lead</option>
-                                    <option value="Contacted">Contacted</option>
-                                    <option value="Booked">Booked</option>
-                                    <option value="Closed">Closed</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Deal Value ($)</label>
-                                <input type="number" id="lead-value" placeholder="150" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Appointment Date</label>
-                                <input type="datetime-local" id="lead-date" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1">Notes / Requirements</label>
-                            <textarea id="lead-notes" rows="2" placeholder="Requested service details..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
-                        </div>
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl transition duration-200 text-sm">Save to Pipeline</button>
-                    </form>
-                </div>
+def plan_key(v):
+    if not v:return None
+    v=str(v).lower().strip().replace('-','_').replace(' ','_')
+    return {'monthly':'monthly','month':'monthly','1_month':'monthly','1month':'monthly','19':'monthly','six_months':'six_months','6_months':'six_months','6months':'six_months','six_month':'six_months','79':'six_months','yearly':'yearly','year':'yearly','1_year':'yearly','1year':'yearly','149':'yearly'}.get(v)
 
-                <!-- AI Assistant -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 flex flex-col justify-between">
-                    <div>
-                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> AI Response & Pitch Generator
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-1">Instantly generate high-conversion outreach templates.</p>
-                        
-                        <div class="mt-4 space-y-3">
-                            <div class="grid grid-cols-2 gap-2">
-                                <button type="button" onclick="generateAIPitch('audit')" class="bg-slate-950 border border-slate-800 hover:border-indigo-500 text-xs text-slate-300 py-2.5 px-3 rounded-xl text-left transition">🌐 Technical Audit Pitch</button>
-                                <button type="button" onclick="generateAIPitch('followup')" class="bg-slate-950 border border-slate-800 hover:border-indigo-500 text-xs text-slate-300 py-2.5 px-3 rounded-xl text-left transition">⏳ Urgent Follow-up</button>
-                            </div>
-                            <div>
-                                <textarea id="ai-output" rows="4" placeholder="Generated message..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                    <button type="button" onclick="copyAIPitch()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-xl transition duration-200 text-sm">Copy Message</button>
-                </div>
-            </div>
+def val(p,*names):
+    for n in names:
+        if p.get(n) not in (None,''):return p[n]
+    for box in ('data','customer','order','purchase','transaction'):
+        q=p.get(box)
+        if isinstance(q,dict):
+            for n in names:
+                if q.get(n) not in (None,''):return q[n]
+    return None
 
-            <!-- Leads Table -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-white">Pipeline Management</h2>
-                    <button onclick="exportCSV()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg">Export CSV Backup</button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-slate-950/50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-                                <th class="p-4">Name</th>
-                                <th class="p-4">Phone</th>
-                                <th class="p-4">Status</th>
-                                <th class="p-4">Value</th>
-                                <th class="p-4">Appointment</th>
-                                <th class="p-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leads-table-body" class="divide-y divide-slate-800/60 text-slate-300"></tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+def activate(email,pk,ref):
+    if not email or pk not in PLANS:return None,'Missing customer email or valid plan'
+    c=db(); u=c.execute('SELECT * FROM users WHERE lower(email)=lower(?)',(email,)).fetchone()
+    if not u:c.close(); return None,'Customer has not created a SaaS account with this email'
+    if ref:
+        old=c.execute('SELECT * FROM subscriptions WHERE payment_ref=?',(str(ref),)).fetchone()
+        if old:c.close(); return dict(old),None
+    st=datetime.now(timezone.utc); ex=st+timedelta(days=PLANS[pk]['days']); ac=code()
+    c.execute("UPDATE subscriptions SET status='expired' WHERE user_id=? AND status='active'",(u['id'],))
+    c.execute('INSERT INTO subscriptions(user_id,plan,status,access_code,starts_at,expires_at,payment_ref,created_at) VALUES(?,?,?,?,?,?,?,?)',(u['id'],pk,'active',ac,st.isoformat(),ex.isoformat(),str(ref or ''),now()))
+    c.commit(); r=c.execute('SELECT * FROM subscriptions WHERE user_id=? ORDER BY id DESC LIMIT 1',(u['id'],)).fetchone(); c.close(); return dict(r),None
 
-        <footer class="py-4 px-6 text-center text-xs text-slate-500 border-t border-slate-900 bg-slate-950">
-            SaaS CRM Suite &copy; 2026. All rights reserved.
-        </footer>
-    </div>
+@app.route('/')
+def home():return render_template('index.html',selar_url=SELAR_PRODUCT_URL)
+@app.get('/health')
+def health():return jsonify(ok=True,service='AI Customer Growth System')
+@app.get('/api/plans')
+def plans():return jsonify(ok=True,plans=PLANS,selar_url=SELAR_PRODUCT_URL)
 
-    <script>
-        const PLANS = {
-            "1m": 30 * 24 * 60 * 60 * 1000,    // 30 Days
-            "6m": 180 * 24 * 60 * 60 * 1000,  // 180 Days
-            "1y": 365 * 24 * 60 * 60 * 1000   // 365 Days
-        };
+@app.post('/api/register')
+def register():
+    d=request.get_json(silent=True) or {}; name=str(d.get('name','')).strip(); biz=str(d.get('business','')).strip(); email=str(d.get('email','')).strip().lower(); pw=str(d.get('password',''))
+    if not all([name,biz,email,pw]):return jsonify(ok=False,error='Complete all fields'),400
+    if len(pw)<6:return jsonify(ok=False,error='Password must be at least 6 characters'),400
+    c=db()
+    try:q=c.execute('INSERT INTO users(name,business,email,password,created_at) VALUES(?,?,?,?,?)',(name,biz,email,hp(pw),now())); c.commit(); uid=q.lastrowid
+    except sqlite3.IntegrityError:c.close(); return jsonify(ok=False,error='An account with that email already exists'),409
+    c.close(); session['user_id']=uid; return jsonify(ok=True,message='Account created')
 
-        function showToast(msg, type='success') {
-            const container = document.getElementById('toast-container');
-            const t = document.createElement('div');
-            t.className = `pointer-events-auto px-4 py-3 rounded-xl text-sm font-medium shadow-lg transition transform translate-y-2 opacity-0 ${type==='success'?'bg-emerald-600 text-white':'bg-rose-600 text-white'}`;
-            t.innerText = msg;
-            container.appendChild(t);
-            setTimeout(() => t.classList.remove('translate-y-2', 'opacity-0'), 50);
-            setTimeout(() => { t.classList.add('opacity-0'); setTimeout(() => t.remove(), 300); }, 3000);
-        }
+@app.post('/api/login')
+def login():
+    d=request.get_json(silent=True) or {}; email=str(d.get('email','')).strip().lower(); pw=str(d.get('password','')); c=db(); u=c.execute('SELECT * FROM users WHERE lower(email)=lower(?)',(email,)).fetchone(); c.close()
+    if not u or not cp(pw,u['password']):return jsonify(ok=False,error='Invalid email or password'),401
+    session['user_id']=u['id']; return jsonify(ok=True)
+@app.post('/api/logout')
+def logout():session.clear(); return jsonify(ok=True)
 
-        function checkSubscription() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const planParam = urlParams.get('plan'); // e.g. ?plan=1m, ?plan=6m, ?plan=1y
+@app.get('/api/me')
+def me():
+    u=current_user()
+    if not u:return jsonify(ok=True,logged_in=False)
+    s=active_sub(u['id']); c=db(); leads=c.execute('SELECT COUNT(*) n FROM leads WHERE user_id=?',(u['id'],)).fetchone()['n']; ap=c.execute("SELECT COUNT(*) n FROM appointments WHERE user_id=? AND status='SCHEDULED'",(u['id'],)).fetchone()['n']; c.close()
+    return jsonify(ok=True,logged_in=True,user=dict(u),subscription=dict(s) if s else None,stats={'leads':leads,'appointments':ap})
 
-            if (planParam && PLANS[planParam]) {
-                const expiryTime = Date.now() + PLANS[planParam];
-                localStorage.setItem('crm_expiry', expiryTime);
-                window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
-                showToast('Subscription activated successfully!');
-            }
+@app.post('/api/checkout')
+@login_required
+def checkout():
+    d=request.get_json(silent=True) or {}; pk=plan_key(d.get('plan'))
+    if pk not in PLANS:return jsonify(ok=False,error='Invalid plan'),400
+    return jsonify(ok=True,plan=PLANS[pk],checkout_url=SELAR_PRODUCT_URL)
 
-            const expiry = localStorage.getItem('crm_expiry');
-            
-            // Default locked state if no active expiry or time passed
-            if (expiry && Date.now() < parseInt(expiry)) {
-                document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('paywall-screen').classList.add('hidden');
-                loadLeads();
-            } else {
-                document.getElementById('app-screen').classList.add('hidden');
-                document.getElementById('paywall-screen').classList.remove('hidden');
-            }
-        }
+@app.post('/api/activate')
+@login_required
+def activate_route():
+    d=request.get_json(silent=True) or {}; ac=str(d.get('access_code','')).strip().upper(); u=current_user()
+    c=db(); s=c.execute("SELECT * FROM subscriptions WHERE access_code=? AND user_id=? AND status='active'",(ac,u['id'])).fetchone(); c.close()
+    if not s:return jsonify(ok=False,error='Invalid or inactive access code'),400
+    return jsonify(ok=True,subscription=dict(s))
 
-        function lockSession() {
-            localStorage.removeItem('crm_expiry');
-            checkSubscription();
-            showToast('Session locked.');
-        }
+@app.get('/api/leads')
+@paid_required
+def get_leads():
+    u=current_user(); c=db(); rows=c.execute('SELECT * FROM leads WHERE user_id=? ORDER BY id DESC',(u['id'],)).fetchall(); c.close(); return jsonify(ok=True,leads=[dict(x) for x in rows])
+@app.post('/api/leads')
+@paid_required
+def add_lead():
+    d=request.get_json(silent=True) or {}; name=str(d.get('name','')).strip();
+    if not name:return jsonify(ok=False,error='Lead name is required'),400
+    u=current_user(); c=db(); q=c.execute('INSERT INTO leads(user_id,name,phone,email,service,source,message,stage,score,notes,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)',(u['id'],name,str(d.get('phone','')),str(d.get('email','')),str(d.get('service','')),str(d.get('source','')),str(d.get('message','')),str(d.get('stage','NEW')).upper(),int(d.get('score',0) or 0),str(d.get('notes','')),now())); c.commit(); lid=q.lastrowid; c.close(); return jsonify(ok=True,lead_id=lid)
+@app.delete('/api/leads/<int:lid>')
+@paid_required
+def del_lead(lid):
+    u=current_user(); c=db(); c.execute('DELETE FROM leads WHERE id=? AND user_id=?',(lid,u['id'])); c.commit(); c.close(); return jsonify(ok=True)
 
-        document.getElementById('lead-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const leads = JSON.parse(localStorage.getItem('crm_leads') || '[]');
-            leads.push({
-                id: Date.now(),
-                name: document.getElementById('lead-name').value.trim(),
-                phone: document.getElementById('lead-phone').value.trim(),
-                status: document.getElementById('lead-status').value,
-                value: parseFloat(document.getElementById('lead-value').value) || 0,
-                date: document.getElementById('lead-date').value,
-                notes: document.getElementById('lead-notes').value.trim()
-            });
-            localStorage.setItem('crm_leads', JSON.stringify(leads));
-            document.getElementById('lead-form').reset();
-            loadLeads();
-            showToast('Lead saved to pipeline!');
-        });
+@app.post('/api/ai/reply')
+@paid_required
+def ai_reply():
+    if not GEMINI_API_KEY:return jsonify(ok=False,error='Gemini is not configured. Add GEMINI_API_KEY on the server.'),503
+    d=request.get_json(silent=True) or {}; msg=str(d.get('message','')).strip(); customer=str(d.get('customer','')).strip(); biz=str(d.get('business','')).strip()
+    if not msg:return jsonify(ok=False,error='Customer message is required'),400
+    prompt=f'''You are the customer-reply assistant inside a CRM. Business: {biz or 'the business'}. Customer: {customer or 'Customer'}. Write a helpful professional reply to the customer message below. Do not invent prices, guarantees, appointments, policies, or facts not provided. Keep it concise and natural. Ask one useful next question when appropriate. Customer message: {msg}'''
+    url=f'https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent'
+    try:
+        r=requests.post(url,headers={'x-goog-api-key':GEMINI_API_KEY,'Content-Type':'application/json'},json={'contents':[{'parts':[{'text':prompt}]}]},timeout=45); p=r.json()
+        if not r.ok:return jsonify(ok=False,error=p),502
+        text=''.join(x.get('text','') for x in p.get('candidates',[{}])[0].get('content',{}).get('parts',[]) if x.get('text'))
+        if not text:return jsonify(ok=False,error='Gemini returned no text'),502
+        return jsonify(ok=True,reply=text)
+    except Exception as e:return jsonify(ok=False,error=str(e)),502
 
-        function loadLeads() {
-            const leads = JSON.parse(localStorage.getItem('crm_leads') || '[]');
-            const tbody = document.getElementById('leads-table-body');
-            tbody.innerHTML = '';
+@app.post('/api/creator/login')
+def creator_login():
+    pw=str((request.get_json(silent=True) or {}).get('password',''))
+    if not hmac.compare_digest(pw,MASTER_PASSWORD):return jsonify(ok=False,error='Invalid creator password'),401
+    session['creator']=True; return jsonify(ok=True)
 
-            let totalRev = leads.reduce((acc, l) => l.status === 'Closed' ? acc + l.value : acc, 0);
-            let bookedCount = leads.filter(l => l.status === 'Booked' || l.date).length;
-            let closedCount = leads.filter(l => l.status === 'Closed').length;
-            let convRate = leads.length > 0 ? Math.round((closedCount / leads.length) * 100) : 0;
+def creator_required(f):
+    @wraps(f)
+    def w(*a,**k):
+        if not session.get('creator'):return jsonify(ok=False,error='Creator login required'),401
+        return f(*a,**k)
+    return w
+@app.get('/api/creator/customers')
+@creator_required
+def customers():
+    c=db(); rows=c.execute('''SELECT u.id,u.name,u.business,u.email,u.created_at,s.plan,s.status,s.access_code,s.starts_at,s.expires_at,s.payment_ref FROM users u LEFT JOIN subscriptions s ON s.id=(SELECT MAX(id) FROM subscriptions WHERE user_id=u.id) ORDER BY u.id DESC''').fetchall(); c.close(); return jsonify(ok=True,customers=[dict(x) for x in rows])
+@app.post('/api/creator/logout')
+def creator_logout():session.pop('creator',None); return jsonify(ok=True)
 
-            document.getElementById('stat-total').innerText = leads.length;
-            document.getElementById('stat-booked').innerText = bookedCount;
-            document.getElementById('stat-revenue').innerText = `$${totalRev.toLocaleString()}`;
-            document.getElementById('stat-conv').innerText = `${convRate}%`;
+@app.post('/api/webhooks/selar')
+def selar_webhook():
+    if SELAR_WEBHOOK_SECRET and not hmac.compare_digest(request.headers.get('X-Webhook-Secret',''),SELAR_WEBHOOK_SECRET):return jsonify(ok=False,error='Invalid webhook secret'),401
+    p=request.get_json(silent=True)
+    if not isinstance(p,dict):return jsonify(ok=False,error='JSON body required'),400
+    ek=str(val(p,'id','event_id','reference','payment_reference','transaction_id','order_id') or secrets.token_hex(12)); c=db()
+    try:c.execute('INSERT INTO webhook_events(event_key,payload,received_at) VALUES(?,?,?)',(ek,str(p),now())); c.commit()
+    except sqlite3.IntegrityError:c.close(); return jsonify(ok=True,duplicate=True)
+    c.close()
+    email=val(p,'email','customer_email','buyer_email','customerEmail'); pk=plan_key(val(p,'plan','plan_key','subscription','variant','variant_name','product_variant','tier')); ref=val(p,'reference','payment_reference','transaction_id','order_id','id')
+    if not pk:return jsonify(ok=True,received=True,activated=False,message='Purchase stored; plan mapping required before activation.',email_detected=bool(email))
+    s,e=activate(str(email).strip(),pk,ref)
+    if e:return jsonify(ok=True,received=True,activated=False,message=e)
+    return jsonify(ok=True,received=True,activated=True,subscription=s)
 
-            if (leads.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">No leads in pipeline. Add one above.</td></tr>`;
-                return;
-            }
-
-            leads.forEach(l => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-900/40 transition';
-                tr.innerHTML = `
-                    <td class="p-4 font-medium text-white">${l.name}</td>
-                    <td class="p-4 text-slate-400">${l.phone}</td>
-                    <td class="p-4"><span class="px-2.5 py-1 text-xs rounded-full bg-slate-800 text-indigo-300">${l.status}</span></td>
-                    <td class="p-4 text-slate-300">$${l.value.toLocaleString()}</td>
-                    <td class="p-4 text-slate-400">${l.date ? new Date(l.date).toLocaleString() : '—'}</td>
-                    <td class="p-4 text-right space-x-2">
-                        <a href="https://wa.me/${l.phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(l.name)},%20following%20up%20on%20our%20service%20inquiry..." target="_blank" class="text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 p-2 rounded-lg inline-block"><i class="fa-brands fa-whatsapp"></i></a>
-                        <button onclick="deleteLead(${l.id})" class="text-rose-400 hover:text-rose-300 bg-rose-500/10 p-2 rounded-lg"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function deleteLead(id) {
-            let leads = JSON.parse(localStorage.getItem('crm_leads')
+init_db()
+if __name__=='__main__':app.run(host='0.0.0.0',port=int(os.getenv('PORT','5000')),debug=False)
+                    
