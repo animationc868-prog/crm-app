@@ -1,9 +1,11 @@
-<!DOCTYPE html>
+
+        
+            <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaS CRM Suite - Ultimate Edition</title>
+    <title>SaaS CRM Suite - Ultimate Business Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -11,26 +13,22 @@
 
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- AUTH SCREEN -->
-    <div id="auth-screen" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6">
+    <!-- SUBSCRIPTION EXPIRED / LOCK SCREEN -->
+    <div id="lock-screen" class="hidden fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6">
         <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl text-center space-y-6">
-            <div class="w-16 h-16 bg-indigo-600/20 text-indigo-400 rounded-2xl mx-auto flex items-center justify-center text-2xl">
-                <i class="fa-solid fa-shield-halved"></i>
+            <div class="w-16 h-16 bg-rose-600/20 text-rose-400 rounded-2xl mx-auto flex items-center justify-center text-2xl">
+                <i class="fa-solid fa-lock"></i>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-white">SaaS CRM Workspace</h1>
-                <p class="text-sm text-slate-400 mt-2">Enter your subscription activation code to unlock your custom dashboard.</p>
+                <h1 class="text-2xl font-bold text-white">Subscription Expired</h1>
+                <p class="text-sm text-slate-400 mt-2">Your subscription has ended. Renew via Selar to instantly unlock your dashboard again.</p>
             </div>
-            <div class="space-y-4">
-                <input type="text" id="activation-input" placeholder="e.g. CRM-1M-9921" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-white tracking-widest uppercase focus:outline-none focus:border-indigo-500">
-                <button id="btn-activate" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition duration-200">Activate Workspace</button>
-            </div>
-            <p class="text-xs text-slate-500">Secure, lightning-fast client pipeline management.</p>
+            <a href="https://selar.co" target="_blank" class="block w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition duration-200">Renew Subscription on Selar</a>
         </div>
     </div>
 
-    <!-- MAIN APP -->
-    <div id="app-screen" class="hidden h-full flex flex-col justify-between">
+    <!-- MAIN APP DASHBOARD -->
+    <div id="app-screen" class="h-full flex flex-col justify-between">
         <header class="flex justify-between items-center py-4 px-6 sm:px-10 border-b border-slate-900 bg-slate-950 shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold">
@@ -38,17 +36,16 @@
                 </div>
                 <div>
                     <span class="font-bold text-lg tracking-tight">SaaS CRM Suite</span>
-                    <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-medium">Ultimate Business Edition</span>
+                    <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-medium">Enterprise Edition</span>
                 </div>
             </div>
             <div class="flex items-center gap-3">
                 <span id="expiry-badge" class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">Active Subscription</span>
-                <button id="btn-lock" class="text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">Lock Session</button>
+                <button onclick="simulateReset()" class="text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">Lock Preview</button>
             </div>
         </header>
 
         <main class="flex-1 p-6 sm:p-10 max-w-7xl mx-auto w-full space-y-8 overflow-y-auto">
-            
             <!-- Stats -->
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
                 <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5">
@@ -80,7 +77,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-medium text-slate-400 mb-1">Client Name</label>
-                                <input type="text" id="lead-name" required placeholder="e.g. John Doe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                                <input type="text" id="lead-name" required placeholder="e.g. Apex Dental" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-slate-400 mb-1">WhatsApp / Phone</label>
@@ -166,7 +163,12 @@
     </div>
 
     <script>
-        const VALID_CODES = { "CRM-1M-9921": 30*86400000, "CRM-6M-4472": 180*86400000, "CRM-1Y-8833": 365*86400000 };
+        // Durations in milliseconds
+        const PLANS = {
+            "1m": 30 * 24 * 60 * 60 * 1000,    // 1 Month (30 Days)
+            "6m": 180 * 24 * 60 * 60 * 1000,  // 6 Months (180 Days)
+            "1y": 365 * 24 * 60 * 60 * 1000   // 1 Year (365 Days)
+        };
 
         function showToast(msg, type='success') {
             const container = document.getElementById('toast-container');
@@ -178,40 +180,41 @@
             setTimeout(() => { t.classList.add('opacity-0'); setTimeout(() => t.remove(), 300); }, 3000);
         }
 
-        function checkAccess() {
-            const params = new URLSearchParams(window.location.search);
-            const code = params.get('code');
-            if (code && VALID_CODES[code]) {
-                localStorage.setItem('crm_expiry', Date.now() + VALID_CODES[code]);
-                window.history.replaceState({}, document.title, window.location.pathname);
+        function checkSubscription() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const planParam = urlParams.get('plan'); // e.g. ?plan=1m, ?plan=6m, ?plan=1y
+
+            if (planParam && PLANS[planParam]) {
+                const expiryTime = Date.now() + PLANS[planParam];
+                localStorage.setItem('crm_expiry', expiryTime);
+                window.history.replaceState({}, document.title, window.location.pathname); // Clean URL
+                showToast('Subscription activated successfully!');
             }
+
             const expiry = localStorage.getItem('crm_expiry');
-            if (expiry && Date.now() < parseInt(expiry)) {
-                document.getElementById('auth-screen').classList.add('hidden');
+            
+            // If no expiry exists, give a default 30-day trial for testing, or lock if expired
+            if (!expiry) {
+                // Default test grant so it doesn't lock your testing view right away
+                localStorage.setItem('crm_expiry', Date.now() + PLANS['1m']);
+            }
+
+            const currentExpiry = parseInt(localStorage.getItem('crm_expiry'));
+            
+            if (Date.now() < currentExpiry) {
                 document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('lock-screen').classList.add('hidden');
                 loadLeads();
             } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('app-screen').classList.add('hidden');
+                document.getElementById('lock-screen').classList.remove('hidden');
             }
         }
 
-        document.getElementById('btn-activate').addEventListener('click', () => {
-            const val = document.getElementById('activation-input').value.trim().toUpperCase();
-            if (VALID_CODES[val]) {
-                localStorage.setItem('crm_expiry', Date.now() + VALID_CODES[val]);
-                checkAccess();
-                showToast('Activated successfully!');
-            } else {
-                showToast('Invalid activation code.', 'error');
-            }
-        });
-
-        document.getElementById('btn-lock').addEventListener('click', () => {
+        function simulateReset() {
             localStorage.removeItem('crm_expiry');
-            checkAccess();
-            showToast('Session locked.');
-        });
+            checkSubscription();
+        }
 
         document.getElementById('lead-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -300,7 +303,7 @@
             showToast('CSV Exported!');
         }
 
-        window.onload = checkAccess;
+        window.onload = checkSubscription;
     </script>
 </body>
-                        </html>
+                    </html>
