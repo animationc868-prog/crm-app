@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS CRM Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+        }
+    </script>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans antialiased flex flex-col justify-between">
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- HEADER -->
+    <header class="flex justify-between items-center py-4 px-6 sm:px-10 border-b border-slate-900 bg-slate-950 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid fa-cube text-lg"></i>
+            </div>
+            <div>
+                <span class="font-bold text-lg tracking-tight">SaaS CRM Suite</span>
+                <span class="block text-[10px] text-slate-400 uppercase tracking-wider font-medium">Enterprise Edition</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg font-medium hidden" id="badge-active">Active License</span>
+            <button onclick="lockSession()" id="btn-lock" class="text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg transition hidden cursor-pointer">Lock Session</button>
+        </div>
+    </header>
+
+    <!-- LANDING & SALES VIEW -->
+    <div id="view-landing" class="flex-1 flex flex-col justify-between p-6 sm:p-10 max-w-5xl mx-auto w-full space-y-10">
+        <main class="space-y-12">
+            <div class="text-center max-w-2xl mx-auto space-y-4">
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-widest">Built for High-Growth Businesses</span>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Close More Deals with Your Custom Business CRM</h1>
+                <p class="text-sm text-slate-400">Manage your pipeline, track customer leads, and pitch directly via WhatsApp with our powerful browser-based SaaS suite.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg font-bold">1</div>
+                    <h3 class="font-bold text-white text-sm">Choose Your Plan</h3>
+                    <p class="text-xs text-slate-400">Select your preferred subscription tier below and secure instant access via Selar.</p>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center text-lg font-bold">2</div>
+                    <h3 class="font-bold text-white text-sm">Instant Activation</h3>
+                    <p class="text-xs text-slate-400">Paste your purchase code to unlock your custom time-bound dashboard.</p>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-lg font-bold">3</div>
+                    <h3 class="font-bold text-white text-sm">Manage & Pitch</h3>
+                    <p class="text-xs text-slate-400">Track lead statuses, monitor performance, and launch WhatsApp pitches with 1-click.</p>
+                </div>
+            </div>
+
+            <!-- Pricing Cards -->
+            <div class="space-y-6">
+                <div class="text-center">
+                    <h2 class="text-xl font-bold text-white">Select Your Subscription Tier</h2>
+                    <p class="text-xs text-slate-400 mt-1">Automatic time-bound license keys delivered upon payment.</p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+                        <div>
+                            <span class="text-xs text-indigo-400 font-semibold uppercase tracking-wider">Starter (1 Month)</span>
+                            <div class="text-2xl font-bold text-white mt-1">$19 <span class="text-xs text-slate-400 font-normal">/ 30 Days</span></div>
+                            <ul class="text-xs text-slate-300 space-y-2 mt-4">
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>Full CRM Workspace</li>
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>Lead Status Tracker</li>
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>1-Click WhatsApp Pitch</li>
+                            </ul>
+                        </div>
+                        <a href="https://selar.com/9u69r59d57" target="_blank" class="mt-6 block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-xs transition border border-slate-700">Get 1 Month Code</a>
+                    </div>
+                    <div class="bg-slate-900 border border-indigo-500 rounded-2xl p-6 flex flex-col justify-between shadow-2xl relative">
+                        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">Most Popular</div>
+                        <div>
+                            <span class="text-xs text-indigo-400 font-semibold uppercase tracking-wider">Growth (6 Months)</span>
+                            <div class="text-2xl font-bold text-white mt-1">$79 <span class="text-xs text-slate-400 font-normal">/ 180 Days</span></div>
+                            <ul class="text-xs text-slate-300 space-y-2 mt-4">
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>Everything in Starter</li>
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>Priority Updates</li>
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>Extended License Support</li>
+                            </ul>
+                        </div>
+                        <a href="https://selar.com/9u69r59d57" target="_blank" class="mt-6 block text-center bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-lg">Get 6 Months Code</a>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+                        <div>
+                            <span class="text-xs text-indigo-400 font-semibold uppercase tracking-wider">Enterprise (1 Year)</span>
+                            <div class="text-2xl font-bold text-white mt-1">$149 <span class="text-xs text-slate-400 font-normal">/ 365 Days</span></div>
+                            <ul class="text-xs text-slate-300 space-y-2 mt-4">
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>Full 12-Month Access</li>
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>All Pro CRM Features</li>
+                                <li><i class="fa-solid fa-check text-emerald-400 mr-2"></i>VIP Technical Support</li>
+                            </ul>
+                        </div>
+                        <a href="https://selar.com/9u69r59d57" target="_blank" class="mt-6 block text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl text-xs transition border border-slate-700">Get 1 Year Code</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activation Box -->
+            <div class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-lg"><i class="fa-solid fa-key"></i></div>
+                    <div>
+                        <h3 class="font-bold text-white text-base">Enter Your Activation Code</h3>
+                        <p class="text-xs text-slate-400">Paste your plan key to unlock your workspace.</p>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <input type="text" id="client-activation-key" placeholder="e.g. CRM-1M-XXXX" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 font-mono">
+                    <button type="button" onclick="handleClientActivation()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition text-sm shadow-lg cursor-pointer">Activate Workspace →</button>
+                </div>
+            </div>
+        </main>
+        <footer class="text-xs text-slate-600 pt-6 border-t border-slate-900 text-center"><p>&copy; 2026 SaaS CRM Suite. All rights reserved.</p></footer>
+    </div>
+
+    <!-- CLIENT WORKSPACE VIEW -->
+    <div id="view-client" class="flex-1 hidden flex-col p-6 sm:p-10 max-w-6xl mx-auto w-full space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-2">
+            <div>
+                <span class="text-xs text-slate-400">License Status</span>
+                <div id="license-expiry-text" class="text-sm font-semibold text-white">Active Plan</div>
+            </div>
+            <div class="text-xs text-indigo-400 bg-indigo-950/50 border border-indigo-500/30 px-3 py-1.5 rounded-xl font-mono" id="license-countdown">Calculating time...</div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl"><span class="text-xs text-slate-400">Total Prospects</span><div id="stat-total" class="text-2xl font-bold text-white mt-1">0</div></div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl"><span class="text-xs text-slate-400">Active Pipeline</span><div id="stat-active" class="text-2xl font-bold text-indigo-400 mt-1">0</div></div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl"><span class="text-xs text-slate-400">Closed / Won</span><div id="stat-won" class="text-2xl font-bold text-emerald-400 mt-1">0</div></div>
+        </div>
+        <div class="flex justify-between items-center">
+            <div><h3 class="text-lg font-bold text-white">Lead Pipeline & Outreach Tracker</h3><p class="text-xs text-slate-400">Manage client leads, track stages, and send instant WhatsApp pitches.</p></div>
+            <button onclick="openLeadModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg cursor-pointer flex items-center gap-2"><i class="fa-solid fa-plus"></i> Add New Lead</button>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-950 text-xs uppercase text-slate-400 border-b border-slate-800">
+                        <tr><th class="p-4">Contact Name</th><th class="p-4">Phone Number</th><th class="p-4">Business Niche</th><th class="p-4">Pipeline Status</th><th class="p-4 text-right">Actions</th></tr>
+                    </thead>
+                    <tbody id="client-leads-tbody" class="divide-y divide-slate-800/60"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Lead Modal -->
+    <div id="modal-lead" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl">
+            <button onclick="closeLeadModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-base font-bold text-white mb-4">Add New Prospect Lead</h3>
+            <form onsubmit="handleSaveLead(event)" class="space-y-4">
+                <div><label class="block text-xs text-slate-400 mb-1">Business Name</label><input type="text" id="lead-name" required placeholder="e.g. Dr. Alabi Dental" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"></div>
+                <div><label class="block text-xs text-slate-400 mb-1">Phone Number</label><input type="text" id="lead-phone" required placeholder="e.g. +2348012345678" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"></div>
+                <div><label class="block text-xs text-slate-400 mb-1">Industry Niche</label><input type="text" id="lead-niche" required placeholder="e.g. Dental Clinic" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"></div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Pipeline Stage</label>
+                    <select id="lead-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        <option value="New Lead">New Lead</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Closed/Won">Closed / Won</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl text-sm font-semibold shadow-lg transition cursor-pointer">Save Prospect</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Valid subscription codes mapped with their exact durations in days:
+        // 1 Month = 30 Days | 6 Months = 180 Days | 1 Year = 365 Days
+        const VALID_CODES = {
+            "CRM-1M-9921": { name: "Starter Plan (1 Month)", days: 30 },
+            "CRM-6M-4472": { name: "Growth Plan (6 Months)", days: 180 },
+            "CRM-1Y-8833": { name: "Enterprise Plan (1 Year)", days: 365 }
+        };
+
+        if (!localStorage.getItem('client_leads')) {
+            localStorage.setItem('client_leads', JSON.stringify([
+                { id: 1, name: "Dr. Smith Dental", phone: "+2348011112222", niche: "Dental", status: "Contacted" }
+            ]));
+        }
+
+        window.onload = function() {
+            checkSubscriptionStatus();
+        }
+
+        function showToast(msg, type='success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl text-xs font-medium shadow-2xl text-white ${type==='success'?'bg-emerald-600':'bg-red-600'}`;
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function handleClientActivation() {
+            const inputVal = document.getElementById('client-activation-key').value.trim();
+            
+            if(VALID_CODES[inputVal]) {
+                const plan = VALID_CODES[inputVal];
+                const expiryTime = Date.now() + (plan.days * 24 * 60 * 60 * 1000); // Calculate exact expiration date
+                
+                localStorage.setItem('crm_plan_name', plan.name);
+                localStorage.setItem('crm_expiry', expiryTime);
+                
+                unlockDashboard();
+                showToast(`Success! ${plan.name} Activated.`);
+            } else {
+                showToast("Invalid activation code!", "error");
+            }
+        }
+
+        function checkSubscriptionStatus() {
+            const expiry = localStorage.getItem('crm_expiry');
+            if(expiry && Date.now() < parseInt(expiry)) {
+                unlockDashboard();
+            } else {
+                lockSession();
+            }
+        }
+
+        function unlockDashboard() {
+            document.getElementById('view-landing').classList.add('hidden');
+            const clientView = document.getElementById('view-client');
+            clientView.classList.remove('hidden');
+            clientView.classList.add('flex');
+            document.getElementById('badge-active').classList.remove('hidden');
+            document.getElementById('btn-lock').classList.remove('hidden');
+            
+            const expiry = parseInt(localStorage.getItem('crm_expiry'));
+            const planName = localStorage.getItem('crm_plan_name') || "Active Plan";
+            const timeLeft = expiry - Date.now();
+            const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+            
+            document.getElementById('license-expiry-text').innerText = planName;
+            document.getElementById('license-countdown').innerText = `Expires in ${daysLeft} days`;
+            
+            loadClientDashboard();
+        }
+
+        function lockSession() {
+            localStorage.removeItem('crm_expiry');
+            localStorage.removeItem('crm_plan_name');
+            document.getElementById('view-client').classList.add('hidden');
+            document.getElementById('view-landing').classList.remove('hidden');
+            document.getElementById('badge-active').classList.add('hidden');
+            document.getElementById('btn-lock').classList.add('hidden');
+            showToast("Session locked or subscription expired.", "error");
+        }
+
+        function loadClientDashboard() {
+            const leads = JSON.parse(localStorage.getItem('client_leads'));
+            const tbody = document.getElementById('client-leads-tbody');
+            tbody.innerHTML = '';
+            document.getElementById('stat-total').innerText = leads.length;
+            document.getElementById('stat-active').innerText = leads.filter(l => l.status !== 'Closed/Won').length;
+            document.getElementById('stat-won').innerText = leads.filter(l => l.status === 'Closed/Won').length;
+
+            leads.forEach(l => {
+                let badgeColor = "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+                if(l.status === 'Contacted') badgeColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+                if(l.status === 'Closed/Won') badgeColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-800 hover:bg-slate-950/40 transition">
+                        <td class="p-4 font-semibold text-white">${l.name}</td>
+                        <td class="p-4 te
