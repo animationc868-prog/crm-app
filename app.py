@@ -192,22 +192,33 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    error = None
     if request.method == "POST":
         email = request.form.get("email")
-        password_raw = request.form.get("password")
+        password = request.form.get("password")
         
-        if email == CREATOR_EMAIL and password_raw == CREATOR_PASSWORD:
+        # Check if it's the admin/creator
+        if email == CREATOR_EMAIL and password == CREATOR_PASSWORD:
             session["creator"] = True
-            return redirect("/creator")
+            return redirect(url_for("creator_login"))
             
+        # Check regular users in database
         conn = db()
-        user = conn.execute("SELECT * FROM users WHERE email = ? AND password = ?", (email, hash_password(password_raw))).fetchone()
-        conn.close()
-        if user:
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        
+        if not user:
+            error = "This account doesn't exist. Please purchase a plan and register with your access code."
+        elif user["password"] != password:
+            error = "Incorrect password. Please try again."
+        else:
             session["user_id"] = user["id"]
-            return redirect("/dashboard")
-        return "Invalid credentials. <a href='/login'>Try again</a>"
-    return render_template_string(LOGIN_HTML)
+            session["user_name"] = user["name"]
+            conn.close()
+            return redirect(url_for("dashboard"))
+            
+        conn.close()
+            
+    return render_template_string(LOGIN_HTML, error=error)
 
 @app.route("/logout")
 def logout():
