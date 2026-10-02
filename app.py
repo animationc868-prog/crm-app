@@ -164,6 +164,56 @@ def home():
 @login_required
 def plans():
     return render_template_string(PLANS_HTML, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
+    @app.route("/plans")
+@login_required
+def plans():
+    return render_template_string(PLANS_HTML, plans=PLANS, selar_url=SELAR_URL)
+
+# --- PASTE THE WELCOME ROUTE RIGHT HERE ---
+@app.route("/welcome")
+def welcome():
+    new_code = generate_access_code()
+    conn = db()
+    conn.execute(
+        "INSERT INTO subscriptions (plan, status, access_code, starts_at, expires_at) VALUES (?, ?, ?, ?, ?)",
+        ("Monthly Plan", "active", new_code, now_text(), now_text())
+    )
+    conn.commit()
+    conn.close()
+    
+    WELCOME_HTML = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payment Successful - GrowthCRM</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-slate-950 text-slate-100 flex items-center justify-center min-h-screen p-4">
+        <div class="bg-slate-900 border border-emerald-500/30 p-8 rounded-2xl max-w-md w-full text-center shadow-xl">
+            <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">✓</div>
+            <h1 class="text-2xl font-bold text-white mb-2">Payment Successful!</h1>
+            <p class="text-slate-400 text-sm mb-6">Thank you for your purchase. Here is your secure, single-use access code to set up your account:</p>
+            
+            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl mb-6">
+                <span class="text-xs text-slate-500 block uppercase tracking-wider mb-1">Your Access Code</span>
+                <span class="text-xl font-mono font-bold text-emerald-400 select-all">{{ code }}</span>
+            </div>
+            
+            <a href="/register" class="block w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 px-4 rounded-xl transition duration-200">
+                Proceed to Registration
+            </a>
+            <p class="text-xs text-slate-500 mt-4">Please copy your code before clicking proceed.</p>
+        </div>
+    </body>
+    </html>
+    """
+    return render_template_string(WELCOME_HTML, code=new_code)
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    # (Your existing register code starts here)
 
 @app.route("/register", methods=["GET", "POST"])
 @app.route("/register", methods=["GET", "POST"])
