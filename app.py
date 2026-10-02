@@ -1001,7 +1001,3 @@ def selar_webhook():
             ]
         )
     )
-
-    reference = (
-
-
