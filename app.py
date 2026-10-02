@@ -449,15 +449,28 @@ LOGIN_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Login - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-slate-950 text-slate-100 flex items-center justify-center min-h-screen">
+<body class="bg-slate-950 text-slate-100 font-sans flex items-center justify-center h-screen">
     <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-xl">
-        <h2 class="text-2xl font-bold mb-6 text-emerald-400 text-center">Welcome Back</h2>
+        <h2 class="text-2xl font-bold mb-6 text-emerald-400 text-center">Login to GrowthCRM</h2>
+        
+        {% if error %}
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-sm mb-6 text-center">
+            {{ error }}
+        </div>
+        {% endif %}
+
         <form method="POST" class="space-y-4">
-            <div><label class="text-sm text-slate-400">Email Address</label><input type="email" name="email" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mt-1"></div>
-            <div><label class="text-sm text-slate-400">Password</label><input type="password" name="password" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mt-1"></div>
-            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold p-3 rounded-lg mt-4">Login</button>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Email Address</label>
+                <input type="email" name="email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Password</label>
+                <input type="password" name="password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 rounded-xl transition">Login</button>
         </form>
-        <p class="text-center text-sm text-slate-400 mt-6">Don't have an account? <a href="/register" class="text-emerald-400">Register</a></p>
+        <p class="text-center text-sm text-slate-400 mt-6">Don't have an access code? <a href="/" class="text-emerald-400 hover:underline">Purchase a plan</a></p>
     </div>
 </body>
 </html>
