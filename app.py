@@ -166,29 +166,48 @@ def plans():
     return render_template_string(PLANS_HTML, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
 
 @app.route("/register", methods=["GET", "POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    error = None
     if request.method == "POST":
         name = request.form.get("name")
         business = request.form.get("business")
         email = request.form.get("email")
-        password = hash_password(request.form.get("password"))
+        password_raw = request.form.get("password")
+        access_code = request.form.get("access_code").strip()
         
         conn = db()
+        
+        # 1. Verify the access code exists in subscriptions
+        sub = conn.execute("SELECT * FROM subscriptions WHERE access_code = ?", (access_code,)).fetchone()
+        if not sub:
+            conn.close()
+            error = "Invalid access code. Please check your Selar purchase receipt."
+            return render_template_string(REGISTER_HTML, error=error)
+            
+        hashed_pw = hash_password(password_raw)
+        
         try:
+            # 2. Create the user account
             conn.execute("INSERT INTO users (name, business, email, password, created_at) VALUES (?, ?, ?, ?, ?)",
-                         (name, business, email, password, now_text()))
-            user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-            conn.execute("INSERT INTO business_settings (user_id, currency, tax_rate, invoice_footer) VALUES (?, 'USD', 0.0, ?)",
-                         (user_id, f"Thank you for doing business with {business}!"))
+                         (name, business, email, hashed_pw, now_text()))
             conn.commit()
+            user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            
+            # 3. Link the subscription to this newly created user ID
+            conn.execute("UPDATE subscriptions SET user_id = ? WHERE access_code = ?", (user_id, access_code))
+            conn.commit()
+            conn.close()
+            
+            session["user_id"] = user_id
+            session["user_name"] = name
+            return redirect(url_for("dashboard"))
+            
         except sqlite3.IntegrityError:
             conn.close()
-            return "Email already registered. <a href='/login'>Login here</a>"
-        
-        conn.close()
-        session["user_id"] = user_id
-        return redirect("/dashboard")
-    return render_template_string(REGISTER_HTML)
+            error = "This email is already registered. Please login instead."
+            
+    return render_template_string(REGISTER_HTML, error=error)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
