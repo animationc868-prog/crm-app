@@ -429,17 +429,41 @@ REGISTER_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>Register - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-slate-950 text-slate-100 flex items-center justify-center min-h-screen">
+<body class="bg-slate-950 text-slate-100 font-sans flex items-center justify-center min-h-screen py-10">
     <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-xl">
-        <h2 class="text-2xl font-bold mb-6 text-emerald-400 text-center">Create Your Account</h2>
+        <h2 class="text-2xl font-bold mb-2 text-emerald-400 text-center">Activate Your Account</h2>
+        <p class="text-slate-400 text-sm text-center mb-6">Enter your details and the access code received after your Selar purchase.</p>
+        
+        {% if error %}
+        <div class="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-xl text-sm mb-6 text-center">
+            {{ error }}
+        </div>
+        {% endif %}
+
         <form method="POST" class="space-y-4">
-            <div><label class="text-sm text-slate-400">Full Name</label><input type="text" name="name" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mt-1"></div>
-            <div><label class="text-sm text-slate-400">Business Name</label><input type="text" name="business" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mt-1"></div>
-            <div><label class="text-sm text-slate-400">Email Address</label><input type="email" name="email" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mt-1"></div>
-            <div><label class="text-sm text-slate-400">Password</label><input type="password" name="password" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg mt-1"></div>
-            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold p-3 rounded-lg mt-4">Register</button>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Full Name</label>
+                <input type="text" name="name" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Business Name</label>
+                <input type="text" name="business" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Email Address</label>
+                <input type="email" name="email" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Password</label>
+                <input type="password" name="password" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Selar Access Code</label>
+                <input type="text" name="access_code" required placeholder="e.g. CRM-XXXXXX" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 rounded-xl transition">Complete Registration</button>
         </form>
-        <p class="text-center text-sm text-slate-400 mt-6">Already have an account? <a href="/login" class="text-emerald-400">Login</a></p>
+        <p class="text-center text-sm text-slate-400 mt-6">Already registered? <a href="/login" class="text-emerald-400 hover:underline">Login here</a></p>
     </div>
 </body>
 </html>
