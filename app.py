@@ -2,12 +2,12 @@ import os
 import sqlite3
 import hashlib
 import json
+import csv
+import io
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 import requests
 from flask import Flask, request, jsonify, session, redirect, render_template_string, Response
-import csv
-import io
 
 app = Flask(__name__)
 
@@ -31,7 +31,7 @@ PLANS = {
 }
 
 # ==========================================
-# DATABASE SETUP
+# DATABASE SETUP & HELPERS
 # ==========================================
 def db():
     conn = sqlite3.connect(DB)
@@ -105,9 +105,6 @@ def init_db():
 
 init_db()
 
-# ==========================================
-# HELPERS & DECORATORS
-# ==========================================
 def now_text():
     return datetime.now(timezone.utc).isoformat()
 
@@ -155,9 +152,8 @@ def paid_required(f):
             return redirect("/plans")
         return f(*args, **kwargs)
     return wrapper
-
-# ==========================================
-# ROUTES
+    # ==========================================
+# ROUTES: AUTH & DASHBOARD
 # ==========================================
 
 @app.route("/")
@@ -378,19 +374,14 @@ def creator_login():
         conn.close()
         return render_template_string(CREATOR_HTML, users=users)
     return redirect("/login")
-
-
-# ==========================================
-# HTML TEMPLATES
+    # ==========================================
+# TEMPLATES: PUBLIC PAGES
 # ==========================================
 
 LANDING_PAGE_HTML = """
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"><title>GrowthCRM - SaaS Lead Pipeline & AI Assistant</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+<head><meta charset="UTF-8"><title>GrowthCRM - SaaS Lead Pipeline & AI Assistant</title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-950 text-slate-100 font-sans">
     <header class="border-b border-slate-800 p-6 flex justify-between items-center max-w-6xl mx-auto">
         <h1 class="text-xl font-bold tracking-wide text-emerald-400">GrowthCRM</h1>
@@ -472,4 +463,390 @@ PLANS_HTML = """
         <form action="/activate" method="POST" class="border-t border-slate-800 pt-6">
             <label class="text-sm text-slate-400 block mb-2">Have an access code from Selar? Enter it here:</label>
             <div class="flex gap-2">
-                <input type="text" name="access_code" placeholder="CRM-XXXXXXXXXX
+                <input type="text" name="access_code" placeholder="CRM-XXXXXXXXXX" required class="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                <button type="submit" class="bg-slate-800 hover:bg-slate-700 px-6 py-3 rounded-lg font-semibold text-sm">Activate</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
+"""
+# ==========================================
+# TEMPLATES: DASHBOARD, CREATOR & RUNNER
+# ==========================================
+
+DASHBOARD_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>Dashboard - GrowthCRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100">
+    <div class="flex min-h-screen">
+        <aside class="w-64 border-r border-slate-800 p-6 flex flex-col justify-between hidden md:flex">
+            <div>
+                <h1 class="text-xl font-bold text-emerald-400 mb-8">GrowthCRM</h1>
+                <nav class="space-y-2 text-sm">
+                    <a href="/dashboard" class="block px-4 py-2 rounded-lg bg-slate-800 text-white font-medium">Dashboard & Leads</a>
+                    <a href="/export/csv" class="block px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-900">Export CSV</a>
+                    <a href="/plans" class="block px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-900">Subscription</a>
+                </nav>
+            </div>
+            <a href="/logout" class="text-red-400 hover:text-red-300 text-sm">Logout</a>
+        </aside>
+
+        <main class="flex-1 p-8 overflow-y-auto">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold">Welcome, {{ user.name }}</h2>
+                    <p class="text-slate-400 text-sm">Business: {{ user.business }} {% if sub %}| Subscription Active{% endif %}</p>
+                </div>
+                <div class="flex gap-4 items-center">
+                    <a href="/export/csv" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold md:hidden">Export CSV</a>
+                    <a href="/logout" class="text-red-400 text-sm">Logout</a>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <p class="text-slate-400 text-sm">Total Leads</p>
+                    <p class="text-3xl font-extrabold mt-2">{{ total_leads }}</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <p class="text-slate-400 text-sm">New Leads</p>
+                    <p class="text-3xl font-extrabold mt-2 text-blue-400">{{ new_leads }}</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <p class="text-slate-400 text-sm">Closed Deals</p>
+                    <p class="text-3xl font-extrabold mt-2 text-emerald-400">{{ closed_deals }}</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Add New Lead</h3>
+                    <form action="/leads/add" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" name="name" placeholder="Client Name" required class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                            <input type="text" name="phone" placeholder="Phone Number" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="email" name="email" placeholder="Email Address" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                            <select name="status" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                                <option value="New">New</option>
+                                <option value="Contacted">Contacted</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <textarea name="notes" placeholder="Notes..." class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm h-20"></textarea>
+                        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm">Add Lead</button>
+                    </form>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">AI Reply Assistant (Gemini)</h3>
+                        <textarea id="aiPrompt" placeholder="Ask AI to write a follow-up email or message..." class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm mb-4 h-20"></textarea>
+                        <button onclick="generateAI()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Generate AI Response</button>
+                    </div>
+                    <div id="aiResult" class="mt-4 p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-300 min-h-[50px]"></div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Schedule Appointment</h3>
+                    <form action="/appointments/add" method="POST" class="space-y-4">
+                        <input type="text" name="client_name" placeholder="Client Name" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        <input type="datetime-local" name="date_time" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        <textarea name="notes" placeholder="Appointment agenda..." class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm h-16"></textarea>
+                        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm">Save Appointment</button>
+                    </form>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Business Settings & Invoice Footer</h3>
+                    <form action="/settings/update" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" name="currency" value="{{ settings.currency }}" placeholder="Currency (USD, NGN)" required class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                            <input type="number" step="0.01" name="tax_rate" value="{{ settings.tax_rate }}" placeholder="Tax Rate %" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        </div>
+                        <input type="text" name="invoice_footer" value="{{ settings.invoice_footer }}" placeholder="Invoice Footer Note" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Update Settings</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden mb-8">
+                <div class="p-6 border-b border-slate-800"><h3 class="text-lg font-bold">Lead Pipeline</h3></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase">
+                                <th class="p-4">Name</th><th class="p-4">Phone</th><th class="p-4">Email</th><th class="p-4">Status</th><th class="p-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 text-sm">
+                            {% for lead in leads %}
+                            <tr>
+                                <td class="p-4 font-medium">{{ lead.name }}</td>
+                                <td class="p-4 text-slate-400">{{ lead.phone }}</td>
+                                <td class="p-4 text-slate-400">{{ lead.email }}</td>
+                                <td class="p-4"><span class="px-2 py-1 rounded text-xs bg-slate-800">{{ lead.status }}</span></td>
+                                <td class="p-4">
+                                    <form action="/leads/delete/{{ lead.id }}" method="POST">
+                                        <button type="submit" class="text-red-400 hover:text-red-300 text-xs">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="p-6 text-center text-slate-500">No leads added yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+    async function generateAI() {
+        const prompt = document.getElementById('aiPrompt').value;
+        const resDiv = document.getElementById('aiResult');
+        resDiv.innerText = "Generating response with Gemini AI...";
+        const response = await fetch('/ai-reply', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt})
+        });
+        const data = await response.json();
+        resDiv.innerText = data.reply;
+    }
+    </script>
+</body>
+</html>
+"""
+
+CREATOR_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Creator Admin - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-slate-950 text-slate-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold text-emerald-400 mb-6">Creator / Admin Panel</h1>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800"><h3 class="text-lg font-bold">All Registered Users & Subscriptions</h3></div>
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase">
+                        <th class="p-4">Name</th><th class="p-4">Business</th><th class="p-4">Email</th><th class="p-4">Plan</th><th class="p-4">Access Code</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for u in users %}
+                    <tr>
+                        <td class="p-4">{{ u.name }}</td>
+                        <td class="p-4">{{ u.business }}</td>
+                        <td class="p-4 text-slate-400">{{ u.email }}</td>
+                        <td class="p-4">{{ u.plan or 'None' }}</td>
+                        <td class="p-4 text-emerald-400 font-mono text-xs">{{ u.access_code or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+"""
+# ==========================================
+# TEMPLATES: DASHBOARD, CREATOR & RUNNER
+# ==========================================
+
+DASHBOARD_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>Dashboard - GrowthCRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100">
+    <div class="flex min-h-screen">
+        <aside class="w-64 border-r border-slate-800 p-6 flex flex-col justify-between hidden md:flex">
+            <div>
+                <h1 class="text-xl font-bold text-emerald-400 mb-8">GrowthCRM</h1>
+                <nav class="space-y-2 text-sm">
+                    <a href="/dashboard" class="block px-4 py-2 rounded-lg bg-slate-800 text-white font-medium">Dashboard & Leads</a>
+                    <a href="/export/csv" class="block px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-900">Export CSV</a>
+                    <a href="/plans" class="block px-4 py-2 rounded-lg text-slate-400 hover:bg-slate-900">Subscription</a>
+                </nav>
+            </div>
+            <a href="/logout" class="text-red-400 hover:text-red-300 text-sm">Logout</a>
+        </aside>
+
+        <main class="flex-1 p-8 overflow-y-auto">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold">Welcome, {{ user.name }}</h2>
+                    <p class="text-slate-400 text-sm">Business: {{ user.business }} {% if sub %}| Subscription Active{% endif %}</p>
+                </div>
+                <div class="flex gap-4 items-center">
+                    <a href="/export/csv" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded-lg font-semibold md:hidden">Export CSV</a>
+                    <a href="/logout" class="text-red-400 text-sm">Logout</a>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <p class="text-slate-400 text-sm">Total Leads</p>
+                    <p class="text-3xl font-extrabold mt-2">{{ total_leads }}</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <p class="text-slate-400 text-sm">New Leads</p>
+                    <p class="text-3xl font-extrabold mt-2 text-blue-400">{{ new_leads }}</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <p class="text-slate-400 text-sm">Closed Deals</p>
+                    <p class="text-3xl font-extrabold mt-2 text-emerald-400">{{ closed_deals }}</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Add New Lead</h3>
+                    <form action="/leads/add" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" name="name" placeholder="Client Name" required class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                            <input type="text" name="phone" placeholder="Phone Number" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="email" name="email" placeholder="Email Address" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                            <select name="status" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                                <option value="New">New</option>
+                                <option value="Contacted">Contacted</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <textarea name="notes" placeholder="Notes..." class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm h-20"></textarea>
+                        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm">Add Lead</button>
+                    </form>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">AI Reply Assistant (Gemini)</h3>
+                        <textarea id="aiPrompt" placeholder="Ask AI to write a follow-up email or message..." class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm mb-4 h-20"></textarea>
+                        <button onclick="generateAI()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Generate AI Response</button>
+                    </div>
+                    <div id="aiResult" class="mt-4 p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-300 min-h-[50px]"></div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Schedule Appointment</h3>
+                    <form action="/appointments/add" method="POST" class="space-y-4">
+                        <input type="text" name="client_name" placeholder="Client Name" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        <input type="datetime-local" name="date_time" required class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        <textarea name="notes" placeholder="Appointment agenda..." class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm h-16"></textarea>
+                        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm">Save Appointment</button>
+                    </form>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold mb-4">Business Settings & Invoice Footer</h3>
+                    <form action="/settings/update" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" name="currency" value="{{ settings.currency }}" placeholder="Currency (USD, NGN)" required class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                            <input type="number" step="0.01" name="tax_rate" value="{{ settings.tax_rate }}" placeholder="Tax Rate %" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        </div>
+                        <input type="text" name="invoice_footer" value="{{ settings.invoice_footer }}" placeholder="Invoice Footer Note" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
+                        <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-lg text-sm">Update Settings</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden mb-8">
+                <div class="p-6 border-b border-slate-800"><h3 class="text-lg font-bold">Lead Pipeline</h3></div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase">
+                                <th class="p-4">Name</th><th class="p-4">Phone</th><th class="p-4">Email</th><th class="p-4">Status</th><th class="p-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 text-sm">
+                            {% for lead in leads %}
+                            <tr>
+                                <td class="p-4 font-medium">{{ lead.name }}</td>
+                                <td class="p-4 text-slate-400">{{ lead.phone }}</td>
+                                <td class="p-4 text-slate-400">{{ lead.email }}</td>
+                                <td class="p-4"><span class="px-2 py-1 rounded text-xs bg-slate-800">{{ lead.status }}</span></td>
+                                <td class="p-4">
+                                    <form action="/leads/delete/{{ lead.id }}" method="POST">
+                                        <button type="submit" class="text-red-400 hover:text-red-300 text-xs">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="p-6 text-center text-slate-500">No leads added yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+    async function generateAI() {
+        const prompt = document.getElementById('aiPrompt').value;
+        const resDiv = document.getElementById('aiResult');
+        resDiv.innerText = "Generating response with Gemini AI...";
+        const response = await fetch('/ai-reply', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({prompt})
+        });
+        const data = await response.json();
+        resDiv.innerText = data.reply;
+    }
+    </script>
+</body>
+</html>
+"""
+
+CREATOR_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Creator Admin - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-slate-950 text-slate-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold text-emerald-400 mb-6">Creator / Admin Panel</h1>
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800"><h3 class="text-lg font-bold">All Registered Users & Subscriptions</h3></div>
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-800 text-xs text-slate-400 uppercase">
+                        <th class="p-4">Name</th><th class="p-4">Business</th><th class="p-4">Email</th><th class="p-4">Plan</th><th class="p-4">Access Code</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for u in users %}
+                    <tr>
+                        <td class="p-4">{{ u.name }}</td>
+                        <td class="p-4">{{ u.business }}</td>
+                        <td class="p-4 text-slate-400">{{ u.email }}</td>
+                        <td class="p-4">{{ u.plan or 'None' }}</td>
+                        <td class="p-4 text-emerald-400 font-mono text-xs">{{ u.access_code or 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
