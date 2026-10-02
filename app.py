@@ -386,16 +386,18 @@ LANDING_PAGE_HTML = """
     <header class="border-b border-slate-800 p-6 flex justify-between items-center max-w-6xl mx-auto">
         <h1 class="text-xl font-bold tracking-wide text-emerald-400">GrowthCRM</h1>
         <div class="space-x-4">
-            <a href="/login" class="text-slate-300 hover:text-white">Login</a>
-            <a href="/register" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-4 py-2 rounded-lg">Get Started</a>
+            <a href="/login" class="text-slate-300 hover:text-white text-sm">Login</a>
+            <a href="/register" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2 rounded-lg text-sm">Register with Code</a>
         </div>
     </header>
     <main class="max-w-5xl mx-auto px-6 py-16 text-center">
         <h2 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">Convert More Leads With <span class="text-emerald-400">AI & Automated CRM</span></h2>
-        <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-10">Manage pipelines, appointments, follow-ups, and generate high-converting client responses instantly using Gemini AI.</p>
-        <a href="/register" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-8 py-4 rounded-xl text-lg shadow-lg shadow-emerald-500/20">Start Your Free Trial</a>
+        <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-6">Manage pipelines, appointments, follow-ups, and generate high-converting client responses instantly using Gemini AI.</p>
+        <div class="inline-block bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-4 py-2 rounded-xl text-sm font-medium mb-12">
+            🔒 Premium Software: Choose a plan below, purchase via Selar, and use your access code to register.
+        </div>
         
-        <div class="mt-24 grid md:grid-cols-3 gap-8 text-left">
+        <div class="grid md:grid-cols-3 gap-8 text-left">
             {% for key, plan in plans.items() %}
             <div class="border border-slate-800 bg-slate-900/50 p-8 rounded-2xl flex flex-col justify-between">
                 <div>
@@ -403,7 +405,7 @@ LANDING_PAGE_HTML = """
                     <div class="text-3xl font-extrabold text-emerald-400 mb-4">${{ plan.price }}</div>
                     <p class="text-slate-400 text-sm mb-6">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
                 </div>
-                <a href="{{ selar_url }}" target="_blank" class="block text-center bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 transition font-semibold py-3 rounded-xl">Purchase via Selar</a>
+                <a href="{{ selar_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition font-bold py-3 rounded-xl">Buy Now via Selar</a>
             </div>
             {% endfor %}
         </div>
