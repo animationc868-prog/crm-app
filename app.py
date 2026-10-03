@@ -7,8 +7,7 @@ import io
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 import requests
-from flask import Flask, request, jsonify, session, redirect, render_template_string, Response
-
+from flask import Flask, request, jsonify, session, redirect, render_template_string, url_for
 app = Flask(__name__)
 
 # ==========================================
