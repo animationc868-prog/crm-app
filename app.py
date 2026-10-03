@@ -163,13 +163,7 @@ def home():
 @login_required
 def plans():
     return render_template_string(PLANS_HTML, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
-    @app.route("/plans")
-@login_required
-def plans():
-    return render_template_string(PLANS_HTML, plans=PLANS, selar_url=SELAR_URL)
-
-# --- PASTE THE WELCOME ROUTE RIGHT HERE ---
-@app.route("/welcome")
+    @app.route("/welcome")
 def welcome():
     new_code = generate_access_code()
     conn = db()
@@ -209,13 +203,7 @@ def welcome():
     </html>
     """
     return render_template_string(WELCOME_HTML, code=new_code)
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    # (Your existing register code starts here)
-
-@app.route("/register", methods=["GET", "POST"])
-@app.route("/register", methods=["GET", "POST"])
+    
 def register():
     error = None
     if request.method == "POST":
