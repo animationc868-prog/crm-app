@@ -597,8 +597,7 @@ PLANS_HTML = """
                     <h3 class="text-xl font-bold text-emerald-400 mb-2">1 Month</h3>
                     <p class="text-slate-400 text-sm mb-4">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
                     <p class="text-2xl font-bold text-white mb-6">$19</p>
-                </div>
-                <a href="{{ monthly_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+                </div><a href="https://selar.com/9u69r59d57" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
             </div>
 
             <!-- 6 Months Plan -->
@@ -607,8 +606,7 @@ PLANS_HTML = """
                     <h3 class="text-xl font-bold text-emerald-400 mb-2">6 Months</h3>
                     <p class="text-slate-400 text-sm mb-4">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
                     <p class="text-2xl font-bold text-white mb-6">$79</p>
-                </div>
-                <a href="{{ semiannual_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+                </div><a href="https://selar.com/011h9610d1" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
             </div>
 
             <!-- 1 Year Plan -->
@@ -617,8 +615,7 @@ PLANS_HTML = """
                     <h3 class="text-xl font-bold text-emerald-400 mb-2">1 Year</h3>
                     <p class="text-slate-400 text-sm mb-4">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
                     <p class="text-2xl font-bold text-white mb-6">$149</p>
-                </div>
-                <a href="{{ yearly_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+                </div><a href="https://selar.com/x952197d1u" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
             </div>
         </div>
 
