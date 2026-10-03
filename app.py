@@ -158,7 +158,6 @@ def paid_required(f):
 @app.route("/")
 def home():
     return render_template_string(LANDING_PAGE_HTML, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
-
 @app.route("/plans")
 @login_required
 def plans():
@@ -172,7 +171,7 @@ def welcome():
         ("Monthly Plan", "active", new_code, now_text(), now_text())
     )
     conn.commit()
-    conn.close()
+    conn.close() 
     
     WELCOME_HTML = """
     <!DOCTYPE html>
