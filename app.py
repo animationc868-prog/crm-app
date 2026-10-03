@@ -203,7 +203,7 @@ def welcome():
     </html>
     """
     return render_template_string(WELCOME_HTML, code=new_code)
-    
+    @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
     if request.method == "POST":
