@@ -161,8 +161,13 @@ def home():
 @app.route("/plans")
 @login_required
 def plans():
-    return render_template_string(PLANS_HTML, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
-
+    return render_template_string(
+        PLANS_HTML, 
+        plans=PLANS, 
+        monthly_url="https://selar.com/9u69r59d57",
+        semiannual_url="https://selar.com/011h9610d1",
+        yearly_url="https://selar.com/x952197d1u"
+    )
 @app.route("/welcome")
 def welcome():
     new_code = generate_access_code()
