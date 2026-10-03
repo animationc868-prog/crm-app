@@ -582,18 +582,48 @@ LOGIN_HTML = """
 PLANS_HTML = """
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Activate Subscription</title><script src="https://cdn.tailwindcss.com"></script></head>
+<head>
+    <meta charset="UTF-8"><title>Activate Subscription</title><script src="https://cdn.tailwindcss.com"></script>
+</head>
 <body class="bg-slate-950 text-slate-100 p-8">
-    <div class="max-w-2xl mx-auto bg-slate-900 border border-slate-800 p-8 rounded-2xl">
-        <h2 class="text-2xl font-bold text-emerald-400 mb-4">Subscription Required</h2>
-        <p class="text-slate-400 mb-6">Please purchase your plan on Selar to activate full access to your CRM pipeline, appointments, and AI tools.</p>
-        <a href="{{ selar_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 rounded-xl mb-8">Pay via Selar</a>
+    <div class="max-w-5xl mx-auto bg-slate-900 border border-slate-800 p-8 rounded-2xl">
+        <h2 class="text-2xl font-bold text-emerald-400 mb-2">Subscription Required</h2>
+        <p class="text-slate-400 text-mb-6 mb-8">Please choose your plan below to unlock full access to your CRM pipeline.</p>
         
+        <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-slate-950 border border-slate-800 p-6 rounded-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-emerald-400 mb-2">1 Month</h3>
+                    <p class="text-slate-400 text-sm mb-4">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
+                    <p class="text-2xl font-bold text-white mb-6">$19</p>
+                </div>
+                <a href="{{ monthly_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800 p-6 rounded-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-emerald-400 mb-2">6 Months</h3>
+                    <p class="text-slate-400 text-sm mb-4">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
+                    <p class="text-2xl font-bold text-white mb-6">$79</p>
+                </div>
+                <a href="{{ semiannual_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800 p-6 rounded-xl flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-emerald-400 mb-2">1 Year</h3>
+                    <p class="text-slate-400 text-sm mb-4">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
+                    <p class="text-2xl font-bold text-white mb-6">$149</p>
+                </div>
+                <a href="{{ yearly_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+            </div>
+        </div>
+
         <form action="/activate" method="POST" class="border-t border-slate-800 pt-6">
             <label class="text-sm text-slate-400 block mb-2">Have an access code from Selar? Enter it here:</label>
             <div class="flex gap-2">
-                <input type="text" name="access_code" placeholder="CRM-XXXXXXXXXX" required class="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm">
-                <button type="submit" class="bg-slate-800 hover:bg-slate-700 px-6 py-3 rounded-lg font-semibold text-sm">Activate</button>
+                <input type="text" name="access_code" placeholder="CRW-XXXXXXXX" required class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white">
+                <button type="submit" class="bg-slate-800 hover:bg-slate-700 px-6 py-2 rounded-lg font-semibold text-slate-200">Activate Code</button>
             </div>
         </form>
     </div>
