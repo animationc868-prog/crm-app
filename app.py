@@ -588,9 +588,10 @@ PLANS_HTML = """
 <body class="bg-slate-950 text-slate-100 p-8">
     <div class="max-w-5xl mx-auto bg-slate-900 border border-slate-800 p-8 rounded-2xl">
         <h2 class="text-2xl font-bold text-emerald-400 mb-2">Subscription Required</h2>
-        <p class="text-slate-400 text-mb-6 mb-8">Please choose your plan below to unlock full access to your CRM pipeline.</p>
+        <p class="text-slate-400 mb-8">Please choose your plan below to unlock full access to your CRM pipeline.</p>
         
         <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <!-- 1 Month Plan -->
             <div class="bg-slate-950 border border-slate-800 p-6 rounded-xl flex flex-col justify-between">
                 <div>
                     <h3 class="text-xl font-bold text-emerald-400 mb-2">1 Month</h3>
@@ -600,6 +601,7 @@ PLANS_HTML = """
                 <a href="{{ monthly_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
             </div>
 
+            <!-- 6 Months Plan -->
             <div class="bg-slate-950 border border-slate-800 p-6 rounded-xl flex flex-col justify-between">
                 <div>
                     <h3 class="text-xl font-bold text-emerald-400 mb-2">6 Months</h3>
@@ -609,6 +611,7 @@ PLANS_HTML = """
                 <a href="{{ semiannual_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
             </div>
 
+            <!-- 1 Year Plan -->
             <div class="bg-slate-950 border border-slate-800 p-6 rounded-xl flex flex-col justify-between">
                 <div>
                     <h3 class="text-xl font-bold text-emerald-400 mb-2">1 Year</h3>
