@@ -489,15 +489,21 @@ LANDING_PAGE_HTML = """
         
         <div class="grid md:grid-cols-3 gap-8 text-left">
             {% for key, plan in plans.items() %}
-            <div class="border border-slate-800 bg-slate-900/50 p-8 rounded-2xl flex flex-col justify-between">
-                <div>
-                    <h3 class="text-xl font-bold mb-2">{{ plan.name }}</h3>
-                    <div class="text-3xl font-extrabold text-emerald-400 mb-4">${{ plan.price }}</div>
-                    <p class="text-slate-400 text-sm mb-6">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
-                </div>
-                <a href="{{ selar_url }}" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition font-bold py-3 rounded-xl">Buy Now via Selar</a>
-            </div>
-            {% endfor %}
+<div class="border border-slate-800 bg-slate-900/50 p-8 rounded-2xl flex flex-col justify-between">
+    <div>
+        <h3 class="text-xl font-bold mb-2">{{ plan.name }}</h3>
+        <p class="text-slate-400 text-sm mb-4">Full access to CRM, lead pipeline, reports, AI assistant, and appointments.</p>
+        <p class="text-2xl font-bold text-white mb-6">${{ plan.price }}</p>
+    </div>
+    {% if key == 'monthly' %}
+    <a href="https://selar.com/9u69r59d57" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+    {% elif key == 'six_months' %}
+    <a href="https://selar.com/011h9610d1" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+    {% elif key == 'yearly' %}
+    <a href="https://selar.com/x952197d1u" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg">Buy Now via Selar</a>
+    {% endif %}
+</div>
+{% endfor %}
         </div>
     </main>
 </body>
