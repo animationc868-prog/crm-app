@@ -162,7 +162,8 @@ def home():
 @login_required
 def plans():
     return render_template_string(PLANS_HTML, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
-    @app.route("/welcome")
+
+@app.route("/welcome")
 def welcome():
     new_code = generate_access_code()
     conn = db()
