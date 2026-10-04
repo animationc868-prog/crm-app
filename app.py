@@ -221,8 +221,6 @@ def welcome():
     </body>
     </html>
     """
-    return render_template_string(WELCOME_HTML, code=new_code)
-    
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
