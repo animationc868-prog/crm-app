@@ -36,14 +36,13 @@ PLANS = {
 def db():
     url = os.environ.get("TURSO_DATABASE_URL")
     token = os.environ.get("TURSO_AUTH_TOKEN")
-
+    
     if url and token:
-        return libsql_client.connect(url=url, auth_token=token)
+        return libsql_client.create_client_sync(url=url, auth_token=token)
     else:
         conn = sqlite3.connect("customer_growth.db")
         conn.row_factory = sqlite3.Row
         return conn
-
 def init_db():
     conn = db()
     conn.executescript("""
