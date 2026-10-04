@@ -157,6 +157,64 @@ def init_db():
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 );
                 CREATE TABLE IF NOT EXISTS webhook_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_key TEXT UNIQUE NOT NULL,
+                    payload TEXT,
+                    received_at TEXT NOT NULL
+                );
+            """)
+    else:
+        # Local SQLite fallback
+        with conn:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    business TEXT NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS subscriptions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    plan TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    access_code TEXT UNIQUE NOT NULL,
+                    starts_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    payment_reference TEXT,
+                    FOREIGN KEY(user_id) REFERENCES users(id)
+                );
+                CREATE TABLE IF NOT EXISTS leads (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    phone TEXT,
+                    email TEXT,
+                    status TEXT DEFAULT 'New',
+                    notes TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(user_id) REFERENCES users(id)
+                );
+                CREATE TABLE IF NOT EXISTS appointments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    client_name TEXT NOT NULL,
+                    date_time TEXT NOT NULL,
+                    notes TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY(user_id) REFERENCES users(id)
+                );
+                CREATE TABLE IF NOT EXISTS business_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER UNIQUE NOT NULL,
+                    currency TEXT DEFAULT 'USD',
+                    tax_rate REAL DEFAULT 0.0,
+                    invoice_footer TEXT,
+                    FOREIGN KEY(user_id) REFERENCES users(id)
+                );
+                CREATE TABLE IF NOT EXISTS webhook_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 event_key TEXT UNIQUE NOT NULL,
                 payload TEXT,
