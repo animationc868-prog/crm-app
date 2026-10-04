@@ -191,8 +191,8 @@ def welcome():
     )
     conn.commit()
     conn.close()
-return render_template_string(WELCOME_HTML, code=new_code, plan=plan_name)
-    
+
+    return render_template_string(WELCOME_HTML, code=new_code, plan=plan_name)
     WELCOME_HTML = """
     <!DOCTYPE html>
     <html lang="en">
