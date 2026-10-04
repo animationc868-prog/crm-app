@@ -45,12 +45,6 @@ def db():
         return conn
 def init_db():
     conn = db()
-    conn.executescript("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-def init_db():
-    conn = db()
     # Check if we are using Turso (ClientSync) or local SQLite
     if hasattr(conn, "execute") and not hasattr(conn, "cursor"):
         # Turso client-sync individual statements
@@ -94,18 +88,23 @@ def init_db():
                 created_at TEXT NOT NULL,
                 FOREIGN KEY(user_id) REFERENCES users(id)
             );""",
-            """CREATE TABLE IF NOT EXISTS business settings (
+            """CREATE TABLE IF NOT EXISTS business_settings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER UNIQUE NOT NULL,
                 currency TEXT DEFAULT 'USD',
                 tax_rate REAL DEFAULT 0.0,
                 invoice_footer TEXT,
                 FOREIGN KEY(user_id) REFERENCES users(id)
+            );""",
+            """CREATE TABLE IF NOT EXISTS webhook_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_key TEXT UNIQUE NOT NULL,
+                payload TEXT,
+                received_at TEXT NOT NULL
             );"""
         ]
         for stmt in statements:
             conn.execute(stmt)
-        conn.close()
     else:
         # Local SQLite fallback
         with conn:
@@ -149,7 +148,7 @@ def init_db():
                     created_at TEXT NOT NULL,
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 );
-                CREATE TABLE IF NOT EXISTS business settings (
+                CREATE TABLE IF NOT EXISTS business_settings (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER UNIQUE NOT NULL,
                     currency TEXT DEFAULT 'USD',
@@ -157,8 +156,13 @@ def init_db():
                     invoice_footer TEXT,
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 );
+                CREATE TABLE IF NOT EXISTS webhook_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    event_key TEXT UNIQUE NOT NULL,
+                    payload TEXT,
+                    received_at TEXT NOT NULL
+                );
             """)
-
 init_db()
 
 def now_text():
