@@ -397,7 +397,12 @@ def ai_reply():
         payload = {"contents": [{"parts": [{"text": f"Act as a professional CRM assistant. {prompt}"}]}]}
         res = requests.post(url, headers=headers, json=payload, timeout=10)
         res_data = res.json()
-        reply = res_data["candidates"][0]["content"]["parts"][0]["text"]
+        
+        if "candidates" in res_data and res_data["candidates"]:
+            reply = res_data["candidates"][0]["content"]["parts"][0]["text"]
+        else:
+            reply = "Error: Model returned an unexpected response format."
+            
         return jsonify({"reply": reply})
     except Exception as e:
         return jsonify({"reply": f"Error communicating with AI: {str(e)}"})
