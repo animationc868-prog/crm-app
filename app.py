@@ -172,7 +172,6 @@ def plans():
 def welcome():
     new_code = generate_access_code()
     
-    # Check if a plan is specified in the URL (e.g., /welcome?plan=yearly or ?plan=semiannual)
     plan_type = request.args.get("plan", "monthly")
     
     if plan_type == "yearly":
@@ -184,16 +183,15 @@ def welcome():
     else:
         plan_name = "Monthly Plan"
         expires = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
-    
+        
     conn = db()
     conn.execute(
         "INSERT INTO subscriptions (plan, status, access_code, starts_at, expires_at) VALUES (?, ?, ?, ?, ?)",
-        (plan_name, "active", new_code, now_text(), expires)
+        (plan_name, "active", new_code, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), expires)
     )
     conn.commit()
     conn.close()
     
-    # Render the welcome success page with the generated code
     return render_template_string(WELCOME_HTML, code=new_code, plan=plan_name)
     
     WELCOME_HTML = """
