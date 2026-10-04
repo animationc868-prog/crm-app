@@ -186,13 +186,12 @@ def welcome():
         
     conn = db()
     conn.execute(
-        "INSERT INTO subscriptions (plan, status, access_code, starts_at, expires_at) VALUES (?, ?, ?, ?, ?)",
-        (plan_name, "active", new_code, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), expires)
+        "INSERT INTO subscriptions (user_id, plan, status, access_code, starts_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (None, plan_name, "active", new_code, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), expires)
     )
     conn.commit()
     conn.close()
-    
-    return render_template_string(WELCOME_HTML, code=new_code, plan=plan_name)
+return render_template_string(WELCOME_HTML, code=new_code, plan=plan_name)
     
     WELCOME_HTML = """
     <!DOCTYPE html>
