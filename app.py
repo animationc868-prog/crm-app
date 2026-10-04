@@ -157,12 +157,14 @@ def init_db():
                     FOREIGN KEY(user_id) REFERENCES users(id)
                 );
                 CREATE TABLE IF NOT EXISTS webhook_events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    event_key TEXT UNIQUE NOT NULL,
-                    payload TEXT,
-                    received_at TEXT NOT NULL
-                );
-            """)
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                event_key TEXT UNIQUE NOT NULL,
+                payload TEXT,
+                received_at TEXT NOT NULL
+            );"""
+        ]
+        for stmt in statements:
+            conn.execute(stmt)
 init_db()
 
 def now_text():
