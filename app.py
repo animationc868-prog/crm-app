@@ -1,3 +1,4 @@
+import libsql_client
 import os
 import sqlite3
 import hashlib
@@ -33,9 +34,15 @@ PLANS = {
 # DATABASE SETUP & HELPERS
 # ==========================================
 def db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    return conn
+    url = os.environ.get("TURSO_DATABASE_URL")
+    token = os.environ.get("TURSO_AUTH_TOKEN")
+
+    if url and token:
+        return libsql_client.connect(url=url, auth_token=token)
+    else:
+        conn = sqlite3.connect("customer_growth.db")
+        conn.row_factory = sqlite3.Row
+        return conn
 
 def init_db():
     conn = db()
