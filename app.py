@@ -168,12 +168,43 @@ def plans():
         semiannual_url="https://selar.com/011h9610d1",
         yearly_url="https://selar.com/x952197d1u"
     )
+WELCOME_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - GrowthCRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-slate-900 border border-emerald-500/30 p-8 rounded-2xl max-w-md w-full text-center shadow-xl">
+        <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        </div>
+        <h1 class="text-2xl font-bold text-white mb-2">Payment Successful!</h1>
+        <p class="text-slate-400 text-sm mb-6">Thank you for your purchase. Here is your secure, single-use access code for your <span class="text-emerald-400 font-semibold">{{ plan }}</span>:</p>
+        
+        <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl mb-6">
+            <span class="text-xs text-slate-500 block uppercase tracking-wider mb-1">Your Access Code</span>
+            <span class="text-xl font-mono font-bold text-emerald-400 select-all">{{ code }}</span>
+        </div>
+
+        <a href="/register" class="block w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 px-4 rounded-xl transition">
+            Proceed to Registration
+        </a>
+        <p class="text-xs text-slate-500 mt-4">Please copy your code before clicking proceed.</p>
+    </div>
+</body>
+</html>
+"""
+
 @app.route("/welcome")
 def welcome():
     new_code = generate_access_code()
-    
+
     plan_type = request.args.get("plan", "monthly")
-    
+
     if plan_type == "yearly":
         plan_name = "Annual Plan"
         expires = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d %H:%M:%S")
@@ -183,7 +214,7 @@ def welcome():
     else:
         plan_name = "Monthly Plan"
         expires = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
-        
+
     conn = db()
     conn.execute(
         "INSERT INTO subscriptions (user_id, plan, status, access_code, starts_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -193,34 +224,6 @@ def welcome():
     conn.close()
 
     return render_template_string(WELCOME_HTML, code=new_code, plan=plan_name)
-    WELCOME_HTML = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Payment Successful - GrowthCRM</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-    </head>
-    <body class="bg-slate-950 text-slate-100 flex items-center justify-center min-h-screen p-4">
-        <div class="bg-slate-900 border border-emerald-500/30 p-8 rounded-2xl max-w-md w-full text-center shadow-xl">
-            <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">✓</div>
-            <h1 class="text-2xl font-bold text-white mb-2">Payment Successful!</h1>
-            <p class="text-slate-400 text-sm mb-6">Thank you for your purchase. Here is your secure, single-use access code to set up your account:</p>
-            
-            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl mb-6">
-                <span class="text-xs text-slate-500 block uppercase tracking-wider mb-1">Your Access Code</span>
-                <span class="text-xl font-mono font-bold text-emerald-400 select-all">{{ code }}</span>
-            </div>
-            
-            <a href="/register" class="block w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 px-4 rounded-xl transition duration-200">
-                Proceed to Registration
-            </a>
-            <p class="text-xs text-slate-500 mt-4">Please copy your code before clicking proceed.</p>
-        </div>
-    </body>
-    </html>
-    """
 @app.route("/register", methods=["GET", "POST"])
 def register():
     error = None
