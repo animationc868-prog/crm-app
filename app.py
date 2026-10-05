@@ -390,10 +390,10 @@ def creator_login():
     TIMILEYINGROWTHCRM = """
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>GrowthCRM - SaaS Lead Pipeline & AI Assistant</title><script src="https://cdn.tailwindcss.com"></script></head>
+<head><meta TIMILEYINGROWTHCRM - SaaS Lead Pipeline & AI Assistant</title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-950 text-slate-100 font-sans">
     <header class="border-b border-slate-800 p-6 flex justify-between items-center max-w-6xl mx-auto">
-        <h1 class="text-xl font-bold tracking-wide text-emerald-400">GrowthCRM</h1>
+        <h1 class="text-xl font-bold tracking-wide text-emerald-400">TIMILEYINGROWTHCRM</h1>
         <div class="space-x-4">
             <a href="/login" class="text-slate-300 hover:text-white text-sm">Login</a>
             <a href="/register" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2 rounded-lg text-sm">Register with Code</a>
@@ -432,7 +432,7 @@ def creator_login():
 REGISTER_HTML = """
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Register - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
+<head><meta charset="UTF-8"><title>Register - TIMILEYINGROWTHCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-950 text-slate-100 font-sans flex items-center justify-center min-h-screen py-10">
     <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-xl">
         <h2 class="text-2xl font-bold mb-2 text-emerald-400 text-center">Activate Your Account</h2>
@@ -476,7 +476,7 @@ REGISTER_HTML = """
 LOGIN_HTML = """
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Login - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
+<head><meta charset="UTF-8"><title>Login - TIMILEYINGROWTHCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-950 text-slate-100 font-sans flex items-center justify-center h-screen">
     <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-xl">
         <h2 class="text-2xl font-bold mb-6 text-emerald-400 text-center">Login to GrowthCRM</h2>
@@ -559,7 +559,7 @@ PLANS_HTML = """
 WELCOME_HTML = """
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Welcome - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
+<head><meta charset="UTF-8"><title>Welcome - TIMILEYINGROWTHCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-950 text-slate-100 font-sans flex items-center justify-center min-h-screen">
     <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-lg text-center shadow-xl">
         <h2 class="text-2xl font-bold text-emerald-400 mb-2">Payment Successful!</h2>
@@ -578,7 +578,7 @@ DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><title>Dashboard - GrowthCRM</title>
+    <meta charset="UTF-8"><title>Dashboard - TIMILEYINGROWTHCRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-950 text-slate-100">
@@ -729,7 +729,7 @@ DASHBOARD_HTML = """
 CREATOR_HTML = """
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Creator Admin - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
+<head><meta charset="UTF-8"><title>Creator Admin - TIMILEYINGROWTHCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-950 text-slate-100 p-8">
     <div class="max-w-6xl mx-auto">
         <h1 class="text-2xl font-bold text-emerald-400 mb-6">Creator / Admin Panel</h1>
