@@ -764,7 +764,6 @@ LOGIN_HTML = """
     </div>
 </body>
 </html>
-"""
 
 PLANS_HTML = """
 <!DOCTYPE html>
