@@ -109,7 +109,7 @@ def paid_required(f):
             return redirect("/plans")
         return f(*args, **kwargs)
     return wrapper
-    @app.route("/")
+@app.route("/")    
 def home():
     return render_template_string(LANDING_PAGE_HTML, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
 
