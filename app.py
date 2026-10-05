@@ -760,7 +760,7 @@ LOGIN_HTML = """
             </div>
             <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 rounded-xl transition">Login</button>
         </form>
-        <p class="text-center text-sm text-slate-400 mt-6">Don't have an access code? <a href="/" class="text-emerald-400 hover:underline">Purchase a plan</a></p>
+        <p class="text-center text-sm text-slate-400 mt-6">Don&#39;t have an access code? <a href="/" class="text-emerald-400 hover:underline">Purchase a plan</a></p>
     </div>
 </body>
 </html>""" # <-- This closes LOGIN_HTML
