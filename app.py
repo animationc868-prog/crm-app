@@ -112,10 +112,9 @@ def paid_required(f):
             return redirect("/plans")
         return f(*args, **kwargs)
     return wrapper
-@app.route("/")    
+@app.route("/")
 def home():
-    return render_template_string(LANDING_PAGE_HTML, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
-
+    return render_template_string(TIMILEYINGROWTHCRM, plans=PLANS, selar_url=SELAR_PRODUCT_URL)
 @app.route("/plans")
 @login_required
 def plans():
@@ -388,7 +387,7 @@ def creator_login():
         conn.close()
         return render_template_string(CREATOR_HTML, users=users)
     return redirect("/login")
-    LANDING_PAGE_HTML = """
+    TIMILEYINGROWTHCRM = """
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><title>GrowthCRM - SaaS Lead Pipeline & AI Assistant</title><script src="https://cdn.tailwindcss.com"></script></head>
