@@ -31,14 +31,15 @@ TURSO_AUTH_TOKEN = os.environ.get("TURSO_AUTH_TOKEN")
 
 def db():
     if TURSO_DATABASE_URL and TURSO_AUTH_TOKEN:
-        import libsql_experimental as libsql
-        url = TURSO_DATABASE_URL.replace("libsql://", "https://")
-        return libsql.connect(database=url, auth_token=TURSO_AUTH_TOKEN)
+        import libsql_client
+        return libsql_client.create_client_sync(
+            url=TURSO_DATABASE_URL,
+            auth_token=TURSO_AUTH_TOKEN
+        )
     else:
         conn = sqlite3.connect("database.db")
         conn.row_factory = sqlite3.Row
         return conn
-
 def init_db():
     conn = db()
     if hasattr(conn, "execute") and not hasattr(conn, "cursor"):
