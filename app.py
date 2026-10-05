@@ -32,8 +32,10 @@ TURSO_AUTH_TOKEN = os.environ.get("TURSO_AUTH_TOKEN")
 def db():
     if TURSO_DATABASE_URL and TURSO_AUTH_TOKEN:
         import libsql_client
+        # Ensure it uses https instead of libsql for the HTTP/WS client
+        url = TURSO_DATABASE_URL.replace("libsql://", "https://")
         return libsql_client.create_client_sync(
-            url=TURSO_DATABASE_URL,
+            url=url,
             auth_token=TURSO_AUTH_TOKEN
         )
     else:
