@@ -665,7 +665,7 @@ LANDING_PAGE_HTML = """
         <h2 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">Convert More Leads With <span class="text-emerald-400">AI & Automated CRM</span></h2>
         <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-6">Manage pipelines, appointments, follow-ups, and generate high-converting client responses instantly using Gemini AI.</p>
         <div class="inline-block bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-4 py-2 rounded-xl text-sm font-medium mb-12">
-            🔒 Premium Software: Choose a plan below, purchase via Selar, and use your access code to register.
+             Premium Software: Choose a plan below, purchase via Selar, and use your access code to register.
         </div>
         
         <div class="grid md:grid-cols-3 gap-8 text-left">
