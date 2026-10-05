@@ -824,7 +824,7 @@ DASHBOARD_HTML = """
 CREATOR_HTML = """
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Creator Admin - GrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
+<head><meta charset="UTF-8"><title>Creator Admin - TIMILEYINGrowthCRM</title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-950 text-slate-100 p-8">
     <div class="max-w-6xl mx-auto">
         <h1 class="text-2xl font-bold text-emerald-400 mb-6">Creator / Admin Panel</h1>
