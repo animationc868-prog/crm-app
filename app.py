@@ -240,7 +240,7 @@ def dashboard():
     return render_template_string(DASHBOARD_HTML, user=user, sub=sub, leads=leads, 
                                   appointments=appointments, settings=settings,
                                   total_leads=total_leads, new_leads=new_leads, closed_deals=closed_deals)
-    @app.route("/leads/add", methods=["POST"])
+@app.route("/leads/add", methods=["POST"])
 @paid_required
 def add_lead():
     user = current_user()
