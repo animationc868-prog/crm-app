@@ -763,7 +763,7 @@ LOGIN_HTML = """
         <p class="text-center text-sm text-slate-400 mt-6">Don't have an access code? <a href="/" class="text-emerald-400 hover:underline">Purchase a plan</a></p>
     </div>
 </body>
-</html>
+</html>"""
 
 PLANS_HTML = """
 <!DOCTYPE html>
