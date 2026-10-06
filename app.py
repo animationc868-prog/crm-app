@@ -269,7 +269,11 @@ def activate_code():
     s=db().one("SELECT * FROM subscriptions WHERE access_code=? AND lower(email)=? ORDER BY id DESC LIMIT 1",(code,u["email"]))
     if not s or not sub_json(s)["active"]:return jsonify(ok=False,error="Invalid or expired access code."),402
     return jsonify(ok=True,subscription=sub_json(s))
-
+    
+@app.route("/welcome")
+def welcome():
+    return "Payment successful! Welcome to your CRM. Please log in to your account."
+    
 @app.get("/api/leads")
 @paid
 def leads(): return jsonify(ok=True,leads=db().all("SELECT * FROM leads WHERE user_id=? ORDER BY id DESC",(user()["id"],)))
