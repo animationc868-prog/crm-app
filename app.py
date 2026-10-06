@@ -174,7 +174,9 @@ def register():
             conn.execute("INSERT INTO users (name, business, email, password, created_at) VALUES (?, ?, ?, ?, ?)",
                          (name, business, email, hashed_pw, now_text()))
             conn.commit()
-            user_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            res = conn.execute("SELECT last_insert_rowid()")
+row = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
+user_id = row[0]
             
             conn.execute("UPDATE subscriptions SET user_id = ? WHERE access_code = ?", (user_id, access_code))
             conn.commit()
@@ -202,7 +204,8 @@ def login():
             return redirect(url_for("creator_login"))
             
         conn = db()
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        res = conn.execute("SELECT * FROM users WHERE email = ?", (email,))
+user = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
         
         if not user:
             error = "This account doesn't exist. Please purchase a plan and register with your access code."
