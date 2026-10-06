@@ -272,7 +272,13 @@ def activate_code():
     
 @app.route("/welcome")
 def welcome():
-    return "Payment successful! Welcome to your CRM. Please log in to your account."
+    # Capture parameters sent back by Selar (e.g., email or transaction reference)
+    customer_email = request.args.get("email", "")
+    reference = request.args.get("reference", "") or request.args.get("trxref", "")
+    
+    # Render your main app template or a dedicated welcome/activation page, 
+    # passing the parameters so your frontend JS can auto-fill or handle registration
+    return render_template("index.html", prefill_email=customer_email, payment_ref=reference)
     
 @app.get("/api/leads")
 @paid
