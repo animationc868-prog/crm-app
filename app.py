@@ -164,7 +164,8 @@ def register():
         access_code = request.form.get("access_code").strip()
         
         conn = db()
-        sub = conn.execute("SELECT * FROM subscriptions WHERE access_code = ?", (access_code,)).fetchone()
+        res = conn.execute("SELECT * FROM subscriptions WHERE access_code = ?", (access_code,))
+    sub = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
         if not sub:
             conn.close()
             error = "Invalid access code. Please check your Selar purchase receipt."
