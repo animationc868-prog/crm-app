@@ -88,7 +88,8 @@ def current_user():
 
 def active_subscription(user_id):
     conn = db()
-    sub = conn.execute("SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active' AND expires_at > ? ORDER BY id DESC LIMIT 1", (user_id, now_text())).fetchone()
+    res = conn.execute("SELECT * FROM subscriptions WHERE user_id = ? AND status = 'active' AND expires_at > ? ORDER BY id DESC LIMIT 1", (user_id, now_text()))
+    sub = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
     conn.close()
     return sub
 
@@ -177,7 +178,7 @@ def register():
             conn.commit()
             res = conn.execute("SELECT last_insert_rowid()")
             row = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
-            user_id = row[0]
+        user_id = row[0]
             conn.execute("UPDATE subscriptions SET user_id = ? WHERE access_code = ?", (user_id, access_code))
             conn.commit()      
             conn.close()
