@@ -272,13 +272,34 @@ def activate_code():
     
 @app.route("/welcome")
 def welcome():
-    # Capture parameters sent back by Selar (e.g., email or transaction reference)
     customer_email = request.args.get("email", "")
     reference = request.args.get("reference", "") or request.args.get("trxref", "")
     
-    # Render your main app template or a dedicated welcome/activation page, 
-    # passing the parameters so your frontend JS can auto-fill or handle registration
-    return render_template("index.html", prefill_email=customer_email, payment_ref=reference)
+    # Return a clean HTML response with their details so it never crashes
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Welcome to TIMILEYINGROWTHCRM</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{ font-family: sans-serif; background: #0b0f19; color: #fff; text-align: center; padding: 50px 20px; }}
+            .card {{ background: #161e2e; max-width: 500px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
+            h2 {{ color: #10b981; }}
+            a {{ display: inline-block; margin-top: 20px; background: #10b981; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Payment Successful! 🎉</h2>
+            <p>Thank you for subscribing to TIMILEYINGROWTHCRM.</p>
+            <p><strong>Email:</strong> {customer_email}</p>
+            <p><strong>Reference:</strong> {reference}</p>
+            <a href="/">Go to Login & Dashboard</a>
+        </div>
+    </body>
+    </html>
+    """
     
 @app.get("/api/leads")
 @paid
