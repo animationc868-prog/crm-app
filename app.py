@@ -387,8 +387,9 @@ def creator_login():
         conn.close()
         return render_template_string(CREATOR_HTML, users=users)
     return redirect("/login")
-    TIMILEYINGROWTHCRM = """
-<!DOCTYPE html>
+    
+TIMILEYINGROWTHCRM = """
+<!DOCTYPE html>    
 <html lang="en">
 <head><meta TIMILEYINGROWTHCRM - SaaS Lead Pipeline & AI Assistant</title><script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-slate-950 text-slate-100 font-sans">
