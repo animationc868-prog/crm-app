@@ -82,7 +82,7 @@ def current_user():
         return None
     conn = db()
     res = conn.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],))
-user = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
+    user = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
     conn.close()
     return user
 
@@ -176,11 +176,10 @@ def register():
                          (name, business, email, hashed_pw, now_text()))
             conn.commit()
             res = conn.execute("SELECT last_insert_rowid()")
-row = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
-user_id = row[0]
-            
+            row = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
+            user_id = row[0]
             conn.execute("UPDATE subscriptions SET user_id = ? WHERE access_code = ?", (user_id, access_code))
-            conn.commit()
+            conn.commit()      
             conn.close()
             
             session["user_id"] = user_id
