@@ -1,4 +1,4 @@
-import os, re, json, hmac, hashlib, secrets, sqlite3
+ummimport os, re, json, hmac, hashlib, secrets, sqlite3
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from urllib.parse import urljoin
@@ -68,11 +68,16 @@ def password_ok(password, stored):
     except Exception:
         return False
 
-
 class Database:
     def __init__(self):
         self.turso = bool(TURSO_URL and TURSO_TOKEN and create_client_sync)
-        self.client = create_client_sync(TURSO_URL, auth_token=TURSO_TOKEN) if self.turso else None
+        self.client = None
+        if self.turso:
+            try:
+                self.client = create_client_sync(TURSO_URL, auth_token=TURSO_TOKEN)
+            except Exception as e:
+                print(f"Database connection error: {e}")
+                self.turso = False
         self.schema()
 
     def execute(self, sql, args=()):
