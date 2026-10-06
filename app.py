@@ -270,32 +270,76 @@ def activate_code():
     if not s or not sub_json(s)["active"]:return jsonify(ok=False,error="Invalid or expired access code."),402
     return jsonify(ok=True,subscription=sub_json(s))
     
-@app.route("/welcome")
+@app.route("/welcome", methods=["GET", "POST"])
 def welcome():
-    customer_email = request.args.get("email", "")
-    reference = request.args.get("reference", "") or request.args.get("trxref", "")
-    
-    # Return a clean HTML response with their details so it never crashes
+    error = None
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        business = request.form.get("business", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "").strip()
+        
+        if not name or not business or not email or not password:
+            error = "Please fill in all fields."
+        else:
+            # Check if email already exists
+            existing = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
+            if existing:
+                error = "An account with this email already exists. Please log in instead."
+            else:
+                import hashlib
+                pass_hash = hashlib.sha256(password.encode()).hexdigest()
+                db().execute("INSERT INTO users (name, business, email, password_hash) VALUES (?, ?, ?, ?)",
+                             (name, business, email, pass_hash))
+                
+                # Automatically log them in
+                new_user = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
+                if new_user:
+                    session["uid"] = new_user["id"]
+                    try:
+                        activate(email, "monthly", "selar_paid", new_user["id"])
+                    except Exception:
+                        pass
+                    return redirect("/")
+                    
     return f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Welcome to TIMILEYINGROWTHCRM</title>
+        <title>Welcome - TIMILEYINGROWTHCRM</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body {{ font-family: sans-serif; background: #0b0f19; color: #fff; text-align: center; padding: 50px 20px; }}
-            .card {{ background: #161e2e; max-width: 500px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
-            h2 {{ color: #10b981; }}
-            a {{ display: inline-block; margin-top: 20px; background: #10b981; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; }}
+            body {{ font-family: sans-serif; background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }}
+            .card {{ background: #161e2e; width: 100%; max-width: 420px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
+            h2 {{ color: #10b981; text-align: center; margin-top: 0; }}
+            p {{ text-align: center; color: #9ca3af; font-size: 14px; margin-bottom: 24px; }}
+            .error {{ background: #ef4444; color: #fff; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 15px; font-size: 14px; }}
+            label {{ display: block; margin-bottom: 6px; font-size: 13px; color: #d1d5db; }}
+            input {{ width: 100%; padding: 10px 12px; margin-bottom: 16px; background: #0b0f19; border: 1px solid #374151; color: #fff; border-radius: 6px; box-sizing: border-box; }}
+            button {{ width: 100%; background: #10b981; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }}
+            button:hover {{ background: #059669; }}
         </style>
     </head>
     <body>
         <div class="card">
             <h2>Payment Successful! 🎉</h2>
-            <p>Thank you for subscribing to TIMILEYINGROWTHCRM.</p>
-            <p><strong>Email:</strong> {customer_email}</p>
-            <p><strong>Reference:</strong> {reference}</p>
-            <a href="/">Go to Login & Dashboard</a>
+            <p>Thank you for subscribing to TIMILEYINGROWTHCRM. Please create your account below to access your dashboard.</p>
+            {f'<div class="error">{error}</div>' if error else ''}
+            <form method="POST">
+                <label>Full Name</label>
+                <input type="text" name="name" required placeholder="Enter your name">
+                
+                <label>Business Name</label>
+                <input type="text" name="business" required placeholder="Enter your business name">
+                
+                <label>Email Address</label>
+                <input type="email" name="email" required placeholder="Enter your email">
+                
+                <label>Password</label>
+                <input type="password" name="password" required placeholder="Create a password">
+                
+                <button type="submit">Create Account & Enter Dashboard</button>
+            </form>
         </div>
     </body>
     </html>
