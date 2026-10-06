@@ -81,7 +81,8 @@ def current_user():
     if "user_id" not in session:
         return None
     conn = db()
-    user = conn.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    res = conn.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],))
+user = res.rows[0] if hasattr(res, 'rows') and res.rows else res.fetchone()
     conn.close()
     return user
 
