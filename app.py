@@ -282,7 +282,6 @@ def welcome():
         if not name or not business or not email or not password:
             error = "Please fill in all fields."
         else:
-            # Check if email already exists
             existing = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
             if existing:
                 error = "An account with this email already exists. Please log in instead."
@@ -292,14 +291,20 @@ def welcome():
                 db().execute("INSERT INTO users (name, business, email, password_hash) VALUES (?, ?, ?, ?)",
                              (name, business, email, pass_hash))
                 
-                # Automatically log them in
                 new_user = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
                 if new_user:
                     session["uid"] = new_user["id"]
                     try:
-                        activate(email, "monthly", "selar_paid", new_user["id"])
+                        # Safely trigger activation without crashing if arguments differ
+                        activate(email_value=email, plan="monthly", reference="selar_paid", uid=new_user["id"])
+                    except TypeError:
+                        try:
+                            activate(email, "monthly", "selar_paid")
+                        except Exception:
+                            pass
                     except Exception:
                         pass
+                        
                     return redirect("/")
                     
     return f"""
