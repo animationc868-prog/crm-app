@@ -270,7 +270,7 @@ def activate_code():
     if not s or not sub_json(s)["active"]:return jsonify(ok=False,error="Invalid or expired access code."),402
     return jsonify(ok=True,subscription=sub_json(s))
     
-@app.route("/welcome", methods=["GET", "POST"])
+    @app.route("/welcome", methods=["GET", "POST"])
 def welcome():
     error = None
     if request.method == "POST":
@@ -285,27 +285,34 @@ def welcome():
             # Check if user already exists
             existing = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
             if existing:
-                # If they already exist, log them in directly
                 session["uid"] = existing["id"]
+                user_id = existing["id"]
             else:
-                # Otherwise, create the new user
-                import hashlib
+                import hashlib, secrets
                 pass_hash = hashlib.sha256(password.encode()).hexdigest()
                 db().execute("INSERT INTO users (name, business, email, password_hash) VALUES (?, ?, ?, ?)",
                              (name, business, email, pass_hash))
                 new_user = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
-                if new_user:
-                    session["uid"] = new_user["id"]
+                session["uid"] = new_user["id"]
+                user_id = new_user["id"]
             
-            # Now activate their subscription regardless of whether they were new or existing!
+            # Directly activate the monthly subscription safely
             try:
-                user_id = session.get("uid")
-                activate(email_value=email, plan="monthly", reference="selar_paid", uid=user_id)
-            except TypeError:
-                try:
-                    activate(email, "monthly", "selar_paid")
-                except Exception:
-                    pass
+                now_dt = now()
+                exp_dt = now_dt + timedelta(days=31)
+                access_code = "SELAR-" + secrets.token_hex(4).upper()
+                
+                sub_exist = db().one("SELECT * FROM subscriptions WHERE lower(email)=?", (email,))
+                if sub_exist:
+                    db().execute(
+                        "UPDATE subscriptions SET user_id=?, plan=?, status=?, starts_at=?, expires_at=? WHERE lower(email)=?",
+                        (user_id, "monthly", "active", now_dt.isoformat(), exp_dt.isoformat(), email)
+                    )
+                else:
+                    db().execute(
+                        "INSERT INTO subscriptions (user_id, email, plan, access_code, status, starts_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (user_id, email, "monthly", access_code, "active", now_dt.isoformat(), exp_dt.isoformat())
+                    )
             except Exception:
                 pass
                 
@@ -332,7 +339,7 @@ def welcome():
     <body>
         <div class="card">
             <h2>Payment Successful! 🎉</h2>
-            <p>Thank you for subscribing to TIMILEYINGROWTHCRM. Enter your account details below to activate your subscription and enter your dashboard.</p>
+            <p>Thank you for subscribing to TIMILEYINGROWTHCRM. Enter your details below to activate your subscription and access your dashboard.</p>
             {f'<div class="error">{error}</div>' if error else ''}
             <form method="POST">
                 <label>Full Name</label>
