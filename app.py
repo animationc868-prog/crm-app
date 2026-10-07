@@ -68,16 +68,11 @@ def password_ok(password, stored):
     except Exception:
         return False
 
+
 class Database:
     def __init__(self):
         self.turso = bool(TURSO_URL and TURSO_TOKEN and create_client_sync)
-        self.client = None
-        if self.turso:
-            try:
-                self.client = create_client_sync(TURSO_URL, auth_token=TURSO_TOKEN)
-            except Exception as e:
-                print(f"Database connection error: {e}")
-                self.turso = False
+        self.client = create_client_sync(TURSO_URL, auth_token=TURSO_TOKEN) if self.turso else None
         self.schema()
 
     def execute(self, sql, args=()):
@@ -269,102 +264,7 @@ def activate_code():
     s=db().one("SELECT * FROM subscriptions WHERE access_code=? AND lower(email)=? ORDER BY id DESC LIMIT 1",(code,u["email"]))
     if not s or not sub_json(s)["active"]:return jsonify(ok=False,error="Invalid or expired access code."),402
     return jsonify(ok=True,subscription=sub_json(s))
-    
-@app.route("/welcome", methods=["GET", "POST"])
-def welcome():
-    error = None
-    if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        business = request.form.get("business", "").strip()
-        raw_email = request.form.get("email", "").strip()
-        e = email(raw_email)
-        password = request.form.get("password", "").strip()
-        
-        if not name or not business or not e or not password:
-            error = "Please fill in all fields correctly."
-        else:
-            # Check if user already exists
-            existing = db().one("SELECT * FROM users WHERE lower(email)=?", (e,))
-            if existing:
-                session["uid"] = existing["id"]
-                user_id = existing["id"]
-            else:
-                try:
-                    db().execute(
-                        "INSERT INTO users (name, business, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-                        (name, business, e, hash_password(password), now())
-                    )
-                except Exception:
-                    pass
-                
-                new_user = db().one("SELECT * FROM users WHERE lower(email)=?", (e,))
-                if new_user:
-                    session["uid"] = new_user["id"]
-                    user_id = new_user["id"]
-                else:
-                    user_id = None
-            
-            # Link or activate subscription safely using native app functions
-            if user_id:
-                try:
-                    sub = db().one("SELECT * FROM subscriptions WHERE lower(email)=?", (e,))
-                    if sub:
-                        db().execute("UPDATE subscriptions SET user_id=?, status=? WHERE id=?", (user_id, "active", sub["id"]))
-                    else:
-                        import secrets
-                        access_code = "SELAR-" + secrets.token_hex(4).upper()
-                        db().execute(
-                            "INSERT INTO subscriptions (user_id, email, plan, access_code, status, starts_at) VALUES (?, ?, ?, ?, ?, ?)",
-                            (user_id, e, "monthly", access_code, "active", now())
-                        )
-                except Exception:
-                    pass
-                
-            return redirect("/")
-                    
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Welcome - TIMILEYINGROWTHCRM</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            body {{ font-family: sans-serif; background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }}
-            .card {{ background: #161e2e; width: 100%; max-width: 420px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
-            h2 {{ color: #10b981; text-align: center; margin-top: 0; }}
-            p {{ text-align: center; color: #9ca3af; font-size: 14px; margin-bottom: 24px; }}
-            .error {{ background: #ef4444; color: #fff; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 15px; font-size: 14px; }}
-            label {{ display: block; margin-bottom: 6px; font-size: 13px; color: #d1d5db; }}
-            input {{ width: 100%; padding: 10px 12px; margin-bottom: 16px; background: #0b0f19; border: 1px solid #374151; color: #fff; border-radius: 6px; box-sizing: border-box; }}
-            button {{ width: 100%; background: #10b981; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }}
-            button:hover {{ background: #059669; }}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h2>Payment Successful! 🎉</h2>
-            <p>Thank you for subscribing to TIMILEYINGROWTHCRM. Enter your details below to activate your subscription and access your dashboard.</p>
-            {f'<div class="error">{error}</div>' if error else ''}
-            <form method="POST">
-                <label>Full Name</label>
-                <input type="text" name="name" required placeholder="Enter your name">
-                
-                <label>Business Name</label>
-                <input type="text" name="business" required placeholder="Enter your business name">
-                
-                <label>Email Address</label>
-                <input type="email" name="email" required placeholder="Enter your email">
-                
-                <label>Password</label>
-                <input type="password" name="password" required placeholder="Enter your password">
-                
-                <button type="submit">Access Dashboard</button>
-            </form>
-        </div>
-    </body>
-    </html>
-    """
-    
+
 @app.get("/api/leads")
 @paid
 def leads(): return jsonify(ok=True,leads=db().all("SELECT * FROM leads WHERE user_id=? ORDER BY id DESC",(user()["id"],)))
@@ -579,5 +479,4 @@ with app.app_context():
     db()
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 10000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "10000")), debug=False)
