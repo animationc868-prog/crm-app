@@ -270,7 +270,7 @@ def activate_code():
     if not s or not sub_json(s)["active"]:return jsonify(ok=False,error="Invalid or expired access code."),402
     return jsonify(ok=True,subscription=sub_json(s))
     
-    @app.route("/welcome", methods=["GET", "POST"])
+@app.route("/welcome", methods=["GET", "POST"])
 def welcome():
     error = None
     if request.method == "POST":
