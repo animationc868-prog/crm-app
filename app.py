@@ -282,30 +282,34 @@ def welcome():
         if not name or not business or not email or not password:
             error = "Please fill in all fields."
         else:
+            # Check if user already exists
             existing = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
             if existing:
-                error = "An account with this email already exists. Please log in instead."
+                # If they already exist, log them in directly
+                session["uid"] = existing["id"]
             else:
+                # Otherwise, create the new user
                 import hashlib
                 pass_hash = hashlib.sha256(password.encode()).hexdigest()
                 db().execute("INSERT INTO users (name, business, email, password_hash) VALUES (?, ?, ?, ?)",
                              (name, business, email, pass_hash))
-                
                 new_user = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
                 if new_user:
                     session["uid"] = new_user["id"]
-                    try:
-                        # Safely trigger activation without crashing if arguments differ
-                        activate(email_value=email, plan="monthly", reference="selar_paid", uid=new_user["id"])
-                    except TypeError:
-                        try:
-                            activate(email, "monthly", "selar_paid")
-                        except Exception:
-                            pass
-                    except Exception:
-                        pass
-                        
-                    return redirect("/")
+            
+            # Now activate their subscription regardless of whether they were new or existing!
+            try:
+                user_id = session.get("uid")
+                activate(email_value=email, plan="monthly", reference="selar_paid", uid=user_id)
+            except TypeError:
+                try:
+                    activate(email, "monthly", "selar_paid")
+                except Exception:
+                    pass
+            except Exception:
+                pass
+                
+            return redirect("/")
                     
     return f"""
     <!DOCTYPE html>
@@ -328,7 +332,7 @@ def welcome():
     <body>
         <div class="card">
             <h2>Payment Successful! 🎉</h2>
-            <p>Thank you for subscribing to TIMILEYINGROWTHCRM. Please create your account below to access your dashboard.</p>
+            <p>Thank you for subscribing to TIMILEYINGROWTHCRM. Enter your account details below to activate your subscription and enter your dashboard.</p>
             {f'<div class="error">{error}</div>' if error else ''}
             <form method="POST">
                 <label>Full Name</label>
@@ -341,9 +345,9 @@ def welcome():
                 <input type="email" name="email" required placeholder="Enter your email">
                 
                 <label>Password</label>
-                <input type="password" name="password" required placeholder="Create a password">
+                <input type="password" name="password" required placeholder="Enter your password">
                 
-                <button type="submit">Create Account & Enter Dashboard</button>
+                <button type="submit">Access Dashboard</button>
             </form>
         </div>
     </body>
