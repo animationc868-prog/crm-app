@@ -276,45 +276,49 @@ def welcome():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         business = request.form.get("business", "").strip()
-        email = request.form.get("email", "").strip().lower()
+        raw_email = request.form.get("email", "").strip()
+        e = email(raw_email)
         password = request.form.get("password", "").strip()
         
-        if not name or not business or not email or not password:
-            error = "Please fill in all fields."
+        if not name or not business or not e or not password:
+            error = "Please fill in all fields correctly."
         else:
             # Check if user already exists
-            existing = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
+            existing = db().one("SELECT * FROM users WHERE lower(email)=?", (e,))
             if existing:
                 session["uid"] = existing["id"]
                 user_id = existing["id"]
             else:
-                import hashlib, secrets
-                pass_hash = hashlib.sha256(password.encode()).hexdigest()
-                db().execute("INSERT INTO users (name, business, email, password_hash) VALUES (?, ?, ?, ?)",
-                             (name, business, email, pass_hash))
-                new_user = db().one("SELECT * FROM users WHERE lower(email)=?", (email,))
-                session["uid"] = new_user["id"]
-                user_id = new_user["id"]
-            
-            # Directly activate the monthly subscription safely
-            try:
-                now_dt = now()
-                exp_dt = now_dt + timedelta(days=31)
-                access_code = "SELAR-" + secrets.token_hex(4).upper()
+                try:
+                    db().execute(
+                        "INSERT INTO users (name, business, email, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+                        (name, business, e, hash_password(password), now())
+                    )
+                except Exception:
+                    pass
                 
-                sub_exist = db().one("SELECT * FROM subscriptions WHERE lower(email)=?", (email,))
-                if sub_exist:
-                    db().execute(
-                        "UPDATE subscriptions SET user_id=?, plan=?, status=?, starts_at=?, expires_at=? WHERE lower(email)=?",
-                        (user_id, "monthly", "active", now_dt.isoformat(), exp_dt.isoformat(), email)
-                    )
+                new_user = db().one("SELECT * FROM users WHERE lower(email)=?", (e,))
+                if new_user:
+                    session["uid"] = new_user["id"]
+                    user_id = new_user["id"]
                 else:
-                    db().execute(
-                        "INSERT INTO subscriptions (user_id, email, plan, access_code, status, starts_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        (user_id, email, "monthly", access_code, "active", now_dt.isoformat(), exp_dt.isoformat())
-                    )
-            except Exception:
-                pass
+                    user_id = None
+            
+            # Link or activate subscription safely using native app functions
+            if user_id:
+                try:
+                    sub = db().one("SELECT * FROM subscriptions WHERE lower(email)=?", (e,))
+                    if sub:
+                        db().execute("UPDATE subscriptions SET user_id=?, status=? WHERE id=?", (user_id, "active", sub["id"]))
+                    else:
+                        import secrets
+                        access_code = "SELAR-" + secrets.token_hex(4).upper()
+                        db().execute(
+                            "INSERT INTO subscriptions (user_id, email, plan, access_code, status, starts_at) VALUES (?, ?, ?, ?, ?, ?)",
+                            (user_id, e, "monthly", access_code, "active", now())
+                        )
+                except Exception:
+                    pass
                 
             return redirect("/")
                     
