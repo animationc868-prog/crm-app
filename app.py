@@ -179,7 +179,12 @@ def creator(fn):
 
 def plan_value(v):
     s = str(v or "").strip().lower()
-    aliases = {"monthly":"monthly","month":"monthly","1 month":"monthly","0":"monthly","$0":"monthly","six months":"six_months","6 months":"six_months","six_months":"six_months","79":"six_months","$79":"six_months","yearly":"yearly","year":"yearly","1 year":"yearly","12 months":"yearly","149":"yearly","$149":"yearly"}
+    aliases = {
+        "0": "monthly", "0.0": "monthly", "$0": "monthly", # <--- Add this for testing!
+        "monthly":"monthly","month":"monthly","1 month":"monthly","19":"monthly","$19":"monthly",
+        "six months":"six_months","6 months":"six_months","six_months":"six_months","79":"six_months","$79":"six_months",
+        "yearly":"yearly","year":"yearly","1 year":"yearly","12 months":"yearly","149":"yearly","$149":"yearly"
+    }
     return aliases.get(s)
 
 
