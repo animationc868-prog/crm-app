@@ -24,7 +24,7 @@ GEMINI_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 PLANS = {
-    "monthly": {"name": "1 Month", "price": 19, "days": 31, "url": "https://selar.com/9u69r59d57"},
+    "monthly": {"name": "1 Month", "price": 0, "days": 31, "url": "https://selar.com/9u69r59d57"},
     "six_months": {"name": "6 Months", "price": 79, "days": 183, "url": "https://selar.com/011h9610d1"},
     "yearly": {"name": "1 Year", "price": 149, "days": 365, "url": "https://selar.com/x952197d1u"},
 }
