@@ -122,7 +122,8 @@ class Database:
             raise RuntimeError("Turso client is missing. Add libsql-client to requirements.txt and redeploy.")
         self.turso = True
         turso_http_url = TURSO_URL.replace("libsql://", "https://", 1)
-self.client = create_client_sync(turso_http_url, auth_token=TURSO_TOKEN)
+        self.client = create_client_sync(turso_http_url, auth_token=TURSO_TOKEN)
+        self.schema()
 
     def execute(self, sql, args=()):
         return self.client.execute(sql, args)
@@ -134,7 +135,6 @@ self.client = create_client_sync(turso_http_url, auth_token=TURSO_TOKEN)
     def all(self, sql, args=()):
         r = self.client.execute(sql, args)
         return [dict(zip(r.columns, row)) for row in r.rows]
-
     def schema(self):
         for q in [
             "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,business TEXT NOT NULL,email TEXT NOT NULL UNIQUE,password_hash TEXT NOT NULL,created_at TEXT NOT NULL)",
