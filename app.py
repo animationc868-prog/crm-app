@@ -630,9 +630,25 @@ def creator_issue_customer_code():
     start = now()
     if old and old.get("status") == "active":
         previous = dt(old.get("expires_at"))
-        if previous and previous > start:
-            start = previous
-            
+@app.post("/api/creator/issue-customer-code")
+@creator
+def creator_issue_customer_code():
+    d = request.get_json(silent=True) or {}
+    e = email(d.get("email"))
+    plan = plan_value(d.get("plan") or "monthly")
+    customer_name = str(d.get("name") or "").strip()[:120]
+    
+    if not e or "@" not in e:
+        return jsonify(ok=False, error="Enter a valid email address."), 400
+    if not plan:
+        return jsonify(ok=False, error="Choose a valid subscription plan."), 400
+        
+    u = db().one("SELECT id FROM users WHERE lower(email)=?", (e,))
+    if u and customer_name:
+        db().execute("UPDATE users SET name=? WHERE id=?", (customer_name, u["id"]))
+        
+    old = db().one("SELECT * FROM subscriptions WHERE lower(email)=? ORDER BY id DESC LIMIT 1", (e,))
+    start = now()
     exp = start + timedelta(days=PLANS[plan]["days"])
     code = old.get("access_code") if old and old.get("access_code") else make_code()
     ref = "CREATOR-ISSUED-" + secrets.token_hex(5).upper()
@@ -653,10 +669,10 @@ def creator_issue_customer_code():
     try:
         db().execute(
             "INSERT INTO creator_code_history(email,plan,access_code,expires_at,status,email_sent,created_at,customer_name,created_by,ip_address,email_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-            (e, plan, code, exp.isoformat(), "active", 1 if sent else 0, iso(), customer_name, "Creator", request.headers.get("X-Forwarded-For", request.remote_addr or "")[:120], "Accepted by email provider" if sent else "Failed / not sent")
+            (e, plan, code, exp.isoformat(), "active", 1 if sent else 0, iso(), customer_name, "Creator", request.headers.get("X-Forwarded-For", request.remote_addr or "")[:120], "Accepted by provider" if sent else "Failed / not sent")
         )
     except Exception:
-        pass # Prevents history logging glitches from blocking code issuance
+        pass
         
     return jsonify(
         ok=True,
@@ -667,9 +683,8 @@ def creator_issue_customer_code():
         existing_user=bool(u),
         email_sent=sent,
         email_message=email_message,
-        message="Customer code created successfully. " + email_message
+        message="Customer code generated and activated successfully. " + email_message
     )
-
 @app.post("/api/creator/resend-email")
 @creator
 def creator_resend_email():
