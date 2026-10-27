@@ -112,29 +112,72 @@ def password_ok(password, stored):
     except Exception:
         return False
 
-
 class Database:
     def __init__(self):
-        # Never silently fall back to Render's ephemeral local filesystem.
         if not TURSO_URL or not TURSO_TOKEN:
             raise RuntimeError("Persistent database is not configured. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Render Environment Variables.")
-        if create_client_sync is None:
-            raise RuntimeError("Turso client is missing. Add libsql-client to requirements.txt and redeploy.")
         self.turso = True
-        turso_http_url = TURSO_URL.replace("libsql://", "https://", 1)
-        self.client = create_client_sync(turso_http_url, auth_token=TURSO_TOKEN)
+        # Convert libsql:// or https:// URL to standard HTTPS API endpoint
+        url = TURSO_URL.replace("libsql://", "https://")
+        if not url.startswith("https://"):
+            url = "https://" + url
+        self.api_url = url.rstrip("/") + "/v2/pipeline"
+        self.headers = {
+            "Authorization": f"Bearer {TURSO_TOKEN}",
+            "Content-Type": "application/json"
+        }
         self.schema()
 
     def execute(self, sql, args=()):
-        return self.client.execute(sql, args)
+        # Convert python types to Turso HTTP pipeline format
+        formatted_args = []
+        for a in args:
+            if a is None:
+                formatted_args.append({"type": "null"})
+            elif isinstance(a, int):
+                formatted_args.append({"type": "integer", "value": str(a)})
+            elif isinstance(a, float):
+                formatted_args.append({"type": "float", "value": a})
+            else:
+                formatted_args.append({"type": "text", "value": str(a)})
 
-    def one(self, sql, args=()):
-        r = self.client.execute(sql, args)
-        return dict(zip(r.columns, r.rows[0])) if r.rows else None
+        payload = {
+            "requests": [
+                {
+                    "type": "execute",
+                    "stmt": {
+                        "sql": sql,
+                        "args": formatted_args
+                    }
+                },
+                {"type": "close"}
+            ]
+        }
 
-    def all(self, sql, args=()):
-        r = self.client.execute(sql, args)
-        return [dict(zip(r.columns, row)) for row in r.rows]
+        resp = requests.post(self.api_url, headers=self.headers, json=payload, timeout=10)
+        if not resp.ok:
+            raise RuntimeError(f"Turso HTTP Error {resp.status_code}: {resp.text}")
+
+        data = resp.json()
+        result_stmt = data["results"][0]
+        if result_stmt.get("type") == "error":
+            raise RuntimeError(result_stmt["error"]["message"])
+
+        response_exec = result_stmt.get("response", {}).get("result", {})
+        cols = [c["name"] for c in response_exec.get("cols", [])]
+        rows = []
+        for r in response_exec.get("rows", []):
+            row_vals = []
+            for cell in r:
+                row_vals.append(cell.get("value"))
+            rows.append(row_vals)
+
+        class ResultSet:
+            def __init__(self, columns, rows):
+                self.columns = columns
+                self.rows = rows
+
+        return ResultSet(cols, rows)
 
     def schema(self):
         for q in [
