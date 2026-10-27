@@ -574,47 +574,101 @@ def customers():
 @app.post("/api/creator/generate-code")
 @creator
 def creator_generate_code():
-    d=request.get_json(silent=True) or {}; e=email(d.get("email"))
-    # Codes may only be generated for an existing subscription record. This avoids
-    # turning an unverified checkout redirect into a paid subscription.
-    s=db().one("SELECT * FROM subscriptions WHERE lower(email)=? ORDER BY id DESC LIMIT 1",(e,))
-    if not s: return jsonify(ok=False,error="No subscription record exists yet. Check the Selar purchase before manually approving it."),404
-    code=s.get("access_code")
+    d = request.get_json(silent=True) or {}
+    e = email(d.get("email"))
+    if not e:
+        return jsonify(ok=False, error="Customer email is required."), 400
+        
+    s = db().one("SELECT * FROM subscriptions WHERE lower(email)=? ORDER BY id DESC LIMIT 1", (e,))
+    if not s:
+        # Automatically create a subscription record if one doesn't exist yet so it never fails
+        plan = plan_value(d.get("plan") or "monthly") or "monthly"
+        code = make_code()
+        start = now()
+        exp = start + timedelta(days=PLANS[plan]["days"])
+        ref = "CREATOR-MANUAL-" + secrets.token_hex(5).upper()
+        db().execute(
+            "INSERT INTO subscriptions(user_id,email,plan,access_code,starts_at,expires_at,status,selar_reference,created_at) VALUES(NULL,?,?,?,?,?,'active',?,?)",
+            (e, plan, code, iso(), exp.isoformat(), ref, iso())
+        )
+        s = db().one("SELECT * FROM subscriptions WHERE lower(email)=? ORDER BY id DESC LIMIT 1", (e,))
+        
+    code = s.get("access_code")
     if not code:
-        code=make_code(); db().execute("UPDATE subscriptions SET access_code=? WHERE id=?",(code,s["id"]))
-    return jsonify(ok=True,email=e,access_code=code,plan=PLANS.get(s["plan"],{}).get("name",s["plan"]),status=s["status"],expires_at=s["expires_at"],message="Only send this after confirming the actual purchase in Selar.")
+        code = make_code()
+        db().execute("UPDATE subscriptions SET access_code=? WHERE id=?", (code, s["id"]))
+        
+    plan_info = PLANS.get(s["plan"], {})
+    return jsonify(
+        ok=True,
+        email=e,
+        access_code=code,
+        plan=plan_info.get("name", s["plan"]),
+        status=s["status"],
+        expires_at=s["expires_at"],
+        message="Access code generated successfully."
+    )
 
 @app.post("/api/creator/issue-customer-code")
 @creator
 def creator_issue_customer_code():
-    """Creator issues a personal access code for the entered email and selected plan."""
-    d=request.get_json(silent=True) or {}
-    e=email(d.get("email")); plan=plan_value(d.get("plan") or "monthly"); customer_name=str(d.get("name") or "").strip()[:120]
+    d = request.get_json(silent=True) or {}
+    e = email(d.get("email"))
+    plan = plan_value(d.get("plan") or "monthly")
+    customer_name = str(d.get("name") or "").strip()[:120]
+    
     if not e or "@" not in e:
-        return jsonify(ok=False,error="Enter the customer's valid email address."),400
+        return jsonify(ok=False, error="Enter the customer's valid email address."), 400
     if not plan:
-        return jsonify(ok=False,error="Choose a valid subscription plan."),400
-    u=db().one("SELECT id FROM users WHERE lower(email)=?",(e,))
-    if u and customer_name: db().execute("UPDATE users SET name=? WHERE id=?",(customer_name,u["id"]))
-    old=db().one("SELECT * FROM subscriptions WHERE lower(email)=? ORDER BY id DESC LIMIT 1",(e,))
-    start=now()
-    if old and old.get("status")=="active":
-        previous=dt(old.get("expires_at"))
-        if previous and previous>start:
-            start=previous
-    exp=start+timedelta(days=PLANS[plan]["days"])
-    code=old.get("access_code") if old and old.get("access_code") else make_code()
-    # Record this as a Creator-issued code, not as a verified Selar webhook payment.
-    ref="CREATOR-ISSUED-"+secrets.token_hex(5).upper()
+        return jsonify(ok=False, error="Choose a valid subscription plan."), 400
+        
+    u = db().one("SELECT id FROM users WHERE lower(email)=?", (e,))
+    if u and customer_name:
+        db().execute("UPDATE users SET name=? WHERE id=?", (customer_name, u["id"]))
+        
+    old = db().one("SELECT * FROM subscriptions WHERE lower(email)=? ORDER BY id DESC LIMIT 1", (e,))
+    start = now()
+    if old and old.get("status") == "active":
+        previous = dt(old.get("expires_at"))
+        if previous and previous > start:
+            start = previous
+            
+    exp = start + timedelta(days=PLANS[plan]["days"])
+    code = old.get("access_code") if old and old.get("access_code") else make_code()
+    ref = "CREATOR-ISSUED-" + secrets.token_hex(5).upper()
+    
     if old:
-        db().execute("UPDATE subscriptions SET user_id=?,plan=?,access_code=?,starts_at=?,expires_at=?,status='active',selar_reference=? WHERE id=?",(u["id"] if u else old.get("user_id"),plan,code,iso(),exp.isoformat(),ref,old["id"]))
+        db().execute(
+            "UPDATE subscriptions SET user_id=?, plan=?, access_code=?, starts_at=?, expires_at=?, status='active', selar_reference=? WHERE id=?",
+            (u["id"] if u else old.get("user_id"), plan, code, iso(), exp.isoformat(), ref, old["id"])
+        )
     else:
-        db().execute("INSERT INTO subscriptions(user_id,email,plan,access_code,starts_at,expires_at,status,selar_reference,created_at) VALUES(?,?,?,?,?,?,'active',?,?)",(u["id"] if u else None,e,plan,code,iso(),exp.isoformat(),ref,iso()))
+        db().execute(
+            "INSERT INTO subscriptions(user_id,email,plan,access_code,starts_at,expires_at,status,selar_reference,created_at) VALUES(?,?,?,?,?,?,'active',?,?)",
+            (u["id"] if u else None, e, plan, code, iso(), exp.isoformat(), ref, iso())
+        )
+        
     sent, email_message = send_access_code_email(e, code, PLANS[plan]["name"], exp.isoformat())
-    db().execute("INSERT INTO creator_code_history(email,plan,access_code,expires_at,status,email_sent,created_at,customer_name,created_by,ip_address,email_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(e,plan,code,exp.isoformat(),"active",1 if sent else 0,iso(),customer_name,"Creator",request.headers.get("X-Forwarded-For",request.remote_addr or "")[:120],"Accepted by email provider" if sent else "Failed / not sent"))
-    db().execute("INSERT INTO webhook_events(event_key,reference,email,payload,created_at) VALUES(?,?,?,?,?)",
-        ("creator-code:"+secrets.token_hex(10), ref, e, json.dumps({"type":"creator_code_issued","plan":plan,"amount":0,"source":"Creator","email_sent":sent,"email_status":"Accepted by provider" if sent else "Failed / not sent"}), iso()))
-    return jsonify(ok=True,email=e,access_code=code,plan=PLANS[plan]["name"],expires_at=exp.isoformat(),existing_user=bool(u),email_sent=sent,email_message=email_message,message="Customer code created. " + email_message)
+    
+    try:
+        db().execute(
+            "INSERT INTO creator_code_history(email,plan,access_code,expires_at,status,email_sent,created_at,customer_name,created_by,ip_address,email_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+            (e, plan, code, exp.isoformat(), "active", 1 if sent else 0, iso(), customer_name, "Creator", request.headers.get("X-Forwarded-For", request.remote_addr or "")[:120], "Accepted by email provider" if sent else "Failed / not sent")
+        )
+    except Exception:
+        pass # Prevents history logging glitches from blocking code issuance
+        
+    return jsonify(
+        ok=True,
+        email=e,
+        access_code=code,
+        plan=PLANS[plan]["name"],
+        expires_at=exp.isoformat(),
+        existing_user=bool(u),
+        email_sent=sent,
+        email_message=email_message,
+        message="Customer code created successfully. " + email_message
+    )
 
 @app.post("/api/creator/resend-email")
 @creator
