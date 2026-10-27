@@ -117,7 +117,6 @@ class Database:
         if not TURSO_URL or not TURSO_TOKEN:
             raise RuntimeError("Persistent database is not configured. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Render Environment Variables.")
         self.turso = True
-        # Convert libsql:// or https:// URL to standard HTTPS API endpoint
         url = TURSO_URL.replace("libsql://", "https://")
         if not url.startswith("https://"):
             url = "https://" + url
@@ -129,32 +128,25 @@ class Database:
         self.schema()
 
     def execute(self, sql, args=()):
-        # Convert python types to Turso HTTP pipeline format
         formatted_args = []
         for a in args:
             if a is None:
                 formatted_args.append({"type": "null"})
-            elif isinstance(a, int):
-                formatted_args.append({"type": "integer", "value": str(a)})
-            elif isinstance(a, float):
-                formatted_args.append({"type": "float", "value": a})
+            elif isinstance(a, bool):
+                formatted_args.append({"type": "integer", "value": "1" if a else "0"})
+            elif isinstance(a, (int, float)):
+                formatted_args.append({"type": "float" if isinstance(a, float) else "integer", "value": str(a)})
             else:
                 formatted_args.append({"type": "text", "value": str(a)})
 
         payload = {
             "requests": [
-                {
-                    "type": "execute",
-                    "stmt": {
-                        "sql": sql,
-                        "args": formatted_args
-                    }
-                },
+                {"type": "execute", "stmt": {"sql": sql, "args": formatted_args}},
                 {"type": "close"}
             ]
         }
 
-        resp = requests.post(self.api_url, headers=self.headers, json=payload, timeout=10)
+        resp = requests.post(self.api_url, headers=self.headers, json=payload, timeout=15)
         if not resp.ok:
             raise RuntimeError(f"Turso HTTP Error {resp.status_code}: {resp.text}")
 
@@ -163,13 +155,18 @@ class Database:
         if result_stmt.get("type") == "error":
             raise RuntimeError(result_stmt["error"]["message"])
 
-        response_exec = result_stmt.get("response", {}).get("result", {})
-        cols = [c["name"] for c in response_exec.get("cols", [])]
+        res_exec = result_stmt.get("response", {}).get("result", {})
+        cols = [c["name"] for c in res_exec.get("cols", [])]
         rows = []
-        for r in response_exec.get("rows", []):
+        for r in res_exec.get("rows", []):
             row_vals = []
             for cell in r:
-                row_vals.append(cell.get("value"))
+                if "value" in cell:
+                    row_vals.append(cell["value"])
+                elif "base64" in cell:
+                    row_vals.append(cell["base64"])
+                else:
+                    row_vals.append(None)
             rows.append(row_vals)
 
         class ResultSet:
@@ -179,6 +176,13 @@ class Database:
 
         return ResultSet(cols, rows)
 
+    def one(self, sql, args=()):
+        r = self.execute(sql, args)
+        return dict(zip(r.columns, r.rows[0])) if r.rows else None
+
+    def all(self, sql, args=()):
+        r = self.execute(sql, args)
+        return [dict(zip(r.columns, row)) for row in r.rows]
     def schema(self):
         for q in [
             "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,business TEXT NOT NULL,email TEXT NOT NULL UNIQUE,password_hash TEXT NOT NULL,created_at TEXT NOT NULL)",
